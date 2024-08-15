@@ -1,5 +1,7 @@
 use crate::treepp::{script, Script};
 
+use crate::pseudo::OP_CHECKSEQUENCEVERIFY;
+
 // inputs must contain sigantures in reverse order of the public_keys
 pub fn construct_script0(blocks_until : i32, public_keys: Vec<String>) -> Script {
     script!{
