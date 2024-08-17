@@ -44,3 +44,54 @@ pub fn construct_script1(winternitz_private_key: &str, original_merkel_state_roo
         {32} OP_EQUAL OP_NOT
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::run;
+    use crate::signatures::winternitz::sign_digits;
+    use sha2::{Digest, Sha256};
+
+    // The secret key
+    const MY_SECKEY: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
+
+
+    #[test]
+    fn test_bitvm20_script1() {
+        // The message to sign
+        #[rustfmt::skip]
+
+        // last 20 bytes of the merkel root hash
+        let merkel_root: Vec<u8> = vec![0x01, 0x02, 0x0a, 0x0b, 0x11, 0x12, 0x2a, 0x2b,
+                                    0x31, 0x03, 0x3a, 0x03, 0x44, 0x14, 0x24, 0xfb,
+                                    0xa1, 0x02, 0xba, 0xcb, 0x1e, 0xd2, 0xea, 0x2f,
+                                    0x31, 0xa3, 0xba, 0x0c, 0x44, 0xe4, 0xff, 0xfb];
+        let mut hasher = Sha256::new();
+        hasher.update(merkel_root.clone());
+        let merkel_root_sha256 = hasher.finalize();
+        let mut merkel_root_hash : [u8; 40] = [0; 40];
+        for i in 0..20 {
+            merkel_root_hash[i] = merkel_root_sha256[12+i];
+        }
+        let public_key = generate_public_key(MY_SECKEY);
+
+        let script = script! {
+            { merkel_root.clone() }
+            { sign_digits(MY_SECKEY, merkel_root_hash) }
+            { checksig_verify(&public_key) }
+        };
+
+        println!(
+            "Winternitz signature size:\n \t{:?} bytes",
+            script.len(),
+        );
+
+        run(script! {
+            { merkel_root.clone() }
+            { sign_digits(MY_SECKEY, merkel_root_hash) }
+            { checksig_verify(&public_key) }
+
+            OP_0 OP_EQUAL // on correct execution this script must fail
+        });
+    }
+}
