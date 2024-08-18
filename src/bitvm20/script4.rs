@@ -62,7 +62,7 @@ fn generate_sum_carry(a : usize, b : usize) -> Script {
             OP_ADD
             OP_FROMALTSTACK // bring carry to the stack
             OP_ADD  // add carry
-            {0xff} OP_GREATERTHANOREQUAL
+            {0xff} OP_GREATERTHAN
             OP_TOALTSTACK
         }
 
@@ -129,7 +129,7 @@ pub fn construct_script4(winternitz_private_key: &str) -> Script {
         OP_FROMALTSTACK {8} OP_EQUAL OP_NOT
         OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
 
-        OP_FROMALTSTACK /*{3} OP_EQUAL OP_NOT*/
+        OP_FROMALTSTACK {3} OP_EQUAL OP_NOT
 
         // pop the input data from the stack
         OP_TOALTSTACK
@@ -137,8 +137,6 @@ pub fn construct_script4(winternitz_private_key: &str) -> Script {
             OP_DROP
         }
         OP_FROMALTSTACK
-
-        OP_0
     }
 }
 
@@ -159,10 +157,10 @@ mod test {
         // The message to sign
         #[rustfmt::skip]
 
-        let value : BigUint = BigUint::parse_bytes(b"500", 10).expect("failed to parse value");
-        let to_balance : BigUint = BigUint::parse_bytes(b"0", 10).expect("failed to parse to_balance");
-        let from_balance : BigUint = BigUint::parse_bytes(b"1000", 10).expect("failed to parse from_balance");
-        let from_nonce : u64 = 0x384;
+        let value : BigUint =        BigUint::parse_bytes(b"1000000000", 10).expect("failed to parse value");
+        let to_balance : BigUint =   BigUint::parse_bytes(b"1157920892", 10).expect("failed to parse to_balance");
+        let from_balance : BigUint = BigUint::parse_bytes(b"1000000000", 10).expect("failed to parse from_balance");
+        let from_nonce : u64 = 0xfffffffffffffffe;
 
         let mut data: Vec<u8> = vec![];
         let temp = value.to_bytes_le();
@@ -231,7 +229,7 @@ mod test {
             { sign_digits(MY_SECKEY, data_hash) }
             { construct_script4(MY_SECKEY) }
 
-            /*OP_0 OP_EQUAL*/ // on correct execution this script must fail
+            OP_0 OP_EQUAL // on correct execution this script must fail
         });
     }
 }
