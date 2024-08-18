@@ -85,6 +85,11 @@ pub fn construct_script4(winternitz_private_key: &str) -> Script {
             {19 - i} OP_ROLL OP_TOALTSTACK
         }
 
+        // duplicate 32 byte data
+        for _ in 0..(40 + 32 + 32) {
+            {(40 + 32 + 32)-1} OP_PICK
+        }
+
         // find 32 byte sha256 hash of the (40 + 32 + 32) byte data on the stack, drop its first (32-20) excess bytes
         { sha256(40 + 32 + 32) }
         for i in 0..(32-20) {
@@ -125,5 +130,99 @@ pub fn construct_script4(winternitz_private_key: &str) -> Script {
         OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
 
         OP_FROMALTSTACK {3} OP_EQUAL OP_NOT
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::run;
+    use crate::signatures::winternitz::sign_digits;
+    use sha2::{Digest, Sha256};
+    use num_bigint::{BigUint, RandomBits};
+
+    // The secret key
+    const MY_SECKEY: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
+
+
+    #[test]
+    fn test_bitvm20_script4() {
+        // The message to sign
+        #[rustfmt::skip]
+
+        let value : BigUint = BigUint::parse_bytes(b"0", 10).expect("failed to parse value");
+        let to_balance : BigUint = BigUint::parse_bytes(b"0", 10).expect("failed to parse to_balance");
+        let from_balance : BigUint = BigUint::parse_bytes(b"0", 10).expect("failed to parse from_balance");
+        let from_nonce : u64 = 0;
+
+        let mut data: Vec<u8> = vec![];
+        let temp = value.to_bytes_le();
+        for i in 0..32 {
+            if i < temp.len() {
+                data.push(temp[i]);
+            }
+            else {
+                data.push(0x00);
+            }
+        }
+        let temp = to_balance.to_bytes_le();
+        for i in 0..32 {
+            if i < temp.len() {
+                data.push(temp[i]);
+            }
+            else {
+                data.push(0x00);
+            }
+        }
+        let temp = from_balance.to_bytes_le();
+        for i in 0..32 {
+            if i < temp.len() {
+                data.push(temp[i]);
+            }
+            else {
+                data.push(0x00);
+            }
+        }
+        let mut temp = from_nonce;
+        for _ in 0..8 {
+            data.push((temp & 0xff) as u8);
+            temp >>= 8;
+        }
+
+        let mut hasher = Sha256::new();
+        hasher.update(data.clone());
+        let data_sha256 = hasher.finalize();
+        let mut data_hash : [u8; 40] = [0; 40];
+        for i in 0..20 {
+            data_hash[2*i] = data_sha256[12+i] & 0xf;
+            data_hash[2*i+1] = data_sha256[12+i] >> 4;
+        }
+        let public_key = generate_public_key(MY_SECKEY);
+
+        println!("data : {:x?}", data);
+        println!("data_hash : {:x?}", data_hash);
+
+        let script = script! {
+            for x in (&data).iter().rev() {
+                {(*x)}
+            }
+            { sign_digits(MY_SECKEY, data_hash) }
+            { construct_script4(MY_SECKEY) }
+        };
+
+        println!(
+            "script 4 size:\n \t{:?} bytes",
+            script.len(),
+        );
+
+        run(script! {
+            for x in (&data).iter().rev() {
+                {(*x)}
+            }
+            { sign_digits(MY_SECKEY, data_hash) }
+            { construct_script4(MY_SECKEY) }
+
+            OP_0 OP_EQUAL // on correct execution this script must fail
+        });
     }
 }
