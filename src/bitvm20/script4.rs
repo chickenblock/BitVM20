@@ -15,7 +15,7 @@ fn duplicate_32_byte_numbers(a : usize) -> Script {
 
 // leaves signum(a - b) on the stack
 // <0 -> a < b
-//  0 -> a = b
+// =0 -> a = b
 // >0 -> a > b
 fn compare_32_byte_numbers(a : usize, b : usize) -> Script {
     script! {
@@ -114,7 +114,7 @@ pub fn construct_script4(winternitz_private_key: &str) -> Script {
 
         // balance of the from-entry user must be greater than or equal to value
         {compare_32_byte_numbers(0, 64)}
-        OP_0 OP_LESSTHANOREQUAL
+        OP_0 OP_GREATERTHANOREQUAL
         OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
 
         // count the number of limbs of the nonce that equal 0xff
@@ -159,10 +159,10 @@ mod test {
         // The message to sign
         #[rustfmt::skip]
 
-        let value : BigUint = BigUint::parse_bytes(b"0", 10).expect("failed to parse value");
+        let value : BigUint = BigUint::parse_bytes(b"500", 10).expect("failed to parse value");
         let to_balance : BigUint = BigUint::parse_bytes(b"0", 10).expect("failed to parse to_balance");
-        let from_balance : BigUint = BigUint::parse_bytes(b"0", 10).expect("failed to parse from_balance");
-        let from_nonce : u64 = 0;
+        let from_balance : BigUint = BigUint::parse_bytes(b"1000", 10).expect("failed to parse from_balance");
+        let from_nonce : u64 = 0x384;
 
         let mut data: Vec<u8> = vec![];
         let temp = value.to_bytes_le();
