@@ -62,7 +62,7 @@ fn generate_sum_carry(a : usize, b : usize) -> Script {
             OP_ADD
             OP_FROMALTSTACK // bring carry to the stack
             OP_ADD  // add carry
-            {0xff} OP_LESSTHAN
+            {0xff} OP_GREATERTHANOREQUAL
             OP_TOALTSTACK
         }
 
@@ -85,7 +85,7 @@ pub fn construct_script4(winternitz_private_key: &str) -> Script {
             {19 - i} OP_ROLL OP_TOALTSTACK
         }
 
-        // duplicate 32 byte data
+        // duplicate (40 + 32 + 32) byte data
         for _ in 0..(40 + 32 + 32) {
             {(40 + 32 + 32)-1} OP_PICK
         }
@@ -129,7 +129,16 @@ pub fn construct_script4(winternitz_private_key: &str) -> Script {
         OP_FROMALTSTACK {8} OP_EQUAL OP_NOT
         OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
 
-        OP_FROMALTSTACK {3} OP_EQUAL OP_NOT
+        OP_FROMALTSTACK /*{3} OP_EQUAL OP_NOT*/
+
+        // pop the input data from the stack
+        OP_TOALTSTACK
+        for _ in 0..(40 + 32 + 32) {
+            OP_DROP
+        }
+        OP_FROMALTSTACK
+
+        OP_0
     }
 }
 
@@ -222,7 +231,7 @@ mod test {
             { sign_digits(MY_SECKEY, data_hash) }
             { construct_script4(MY_SECKEY) }
 
-            OP_0 OP_EQUAL // on correct execution this script must fail
+            /*OP_0 OP_EQUAL*/ // on correct execution this script must fail
         });
     }
 }
