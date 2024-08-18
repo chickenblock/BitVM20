@@ -16,7 +16,12 @@ pub fn construct_script1(winternitz_private_key: &str, original_merkel_state_roo
 
         // reverse these 20 bytes, and push each of these to altstack
         for i in 0..20 {
-            {19 - i} OP_ROLL OP_TOALTSTACK
+            {19-i} OP_ROLL OP_TOALTSTACK
+        }
+
+        // duplicate 32 byte data
+        for _ in 0..32 {
+            {32-1} OP_PICK
         }
 
         // find 32 byte sha256 hash of the 32 byte data on the stack, drop its first (32-20) excess bytes
@@ -37,7 +42,7 @@ pub fn construct_script1(winternitz_private_key: &str, original_merkel_state_roo
         // only returns true if lesser than 32 limbs are equal
         OP_0 OP_TOALTSTACK
         for i in 0..32 {
-            {original_merkel_state_root[31-i]} OP_EQUAL
+            {original_merkel_state_root[i]} OP_EQUAL
             OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
         }
         OP_FROMALTSTACK
@@ -71,25 +76,33 @@ mod test {
         let merkel_root_sha256 = hasher.finalize();
         let mut merkel_root_hash : [u8; 40] = [0; 40];
         for i in 0..20 {
-            merkel_root_hash[i] = merkel_root_sha256[12+i];
+            merkel_root_hash[2*i] = merkel_root_sha256[12+i] & 0xf;
+            merkel_root_hash[2*i+1] = merkel_root_sha256[12+i] >> 4;
         }
         let public_key = generate_public_key(MY_SECKEY);
 
+        println!("merkel_root : {:x?}", merkel_root);
+        println!("merkel_root_hash : {:x?}", merkel_root_hash);
+
         let script = script! {
-            { merkel_root.clone() }
+            for x in (&merkel_root).iter().rev() {
+                {(*x)}
+            }
             { sign_digits(MY_SECKEY, merkel_root_hash) }
-            { checksig_verify(&public_key) }
+            { construct_script1(MY_SECKEY, merkel_root.clone()) }
         };
 
         println!(
-            "Winternitz signature size:\n \t{:?} bytes",
+            "script 1 size:\n \t{:?} bytes",
             script.len(),
         );
 
         run(script! {
-            { merkel_root.clone() }
+            for x in (&merkel_root).iter().rev() {
+                {(*x)}
+            }
             { sign_digits(MY_SECKEY, merkel_root_hash) }
-            { checksig_verify(&public_key) }
+            { construct_script1(MY_SECKEY, merkel_root.clone()) }
 
             OP_0 OP_EQUAL // on correct execution this script must fail
         });
