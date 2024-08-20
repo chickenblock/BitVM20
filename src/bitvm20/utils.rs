@@ -7,8 +7,6 @@ use crate::signatures::winternitz::checksig_verify;
 use crate::signatures::winternitz::PublicKey;
 //use crate::signatures::winternitz::generate_public_key;
 
-use crate::hash::blake3::*;
-
 pub fn data_to_signable_balke3_digits(data : &Vec<u8>) -> [u8; 40] {
     let mut hasher = blake3::Hasher::new();
     hasher.update(&data);
