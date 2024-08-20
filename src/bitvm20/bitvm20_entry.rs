@@ -1,8 +1,8 @@
 use num_bigint::{BigUint};
 
-const bitvm20_entry_serialized_size : usize = (32 + 32 + 8 + 32);
+pub const bitvm20_entry_serialized_size : usize = (32 + 32 + 8 + 32);
 
-struct bitvm20_entry {
+pub struct bitvm20_entry {
     public_key : [u8; 64], // x, y 32 byte each in uncompressed format
     nonce : u64, // 64 bit nonce to be serialized in little endian format
     balance : BigUint, // 256 bit unsigned integer to be serialized in little endian format
