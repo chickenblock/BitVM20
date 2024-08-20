@@ -108,7 +108,6 @@ mod test {
     use super::*;
     use crate::run;
     use crate::signatures::winternitz::{generate_public_key,sign_digits};
-    use crate::hash::blake3::*;
     use num_bigint::{BigUint,RandomBits};
 
     // The secret key

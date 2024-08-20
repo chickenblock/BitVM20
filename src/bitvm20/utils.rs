@@ -1,11 +1,9 @@
 use crate::treepp::{script, Script};
 
-//use crate::hash::sha256::sha256;
 use crate::hash::blake3::blake3_var_length;
 
 use crate::signatures::winternitz::checksig_verify;
 use crate::signatures::winternitz::PublicKey;
-//use crate::signatures::winternitz::generate_public_key;
 
 pub fn data_to_signable_balke3_digits(data : &Vec<u8>) -> [u8; 40] {
     let mut hasher = blake3::Hasher::new();
