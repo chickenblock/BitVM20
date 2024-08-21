@@ -93,3 +93,44 @@ impl bitvm20_merkel_tree {
 
     }*/
 }
+
+impl bitvm20_merkel_proof {
+    // validate merke proof
+    pub fn validate_proof(&self) -> bool {
+        // index out of bounds
+        if(self.entry_index >= bitvm20_merkel_tree_size) {
+            return false;
+        }
+
+        let mut index = self.entry_index;
+
+        let mut curr_hash : [u8; 32] = [0; 32];
+        {
+            let mut hasher = blake3::Hasher::new();
+            hasher.update(&self.serialized_entry);
+            let data_hash = hasher.finalize();
+            curr_hash = (*data_hash.as_bytes());
+        }
+
+        let mut curr_level = levels;
+        while curr_level > 0 {
+            {
+                let mut hasher = blake3::Hasher::new();
+                if(index % 2 == 1) { // for odd index
+                    hasher.update(&self.root_n_siblings[curr_level]);
+                    hasher.update(&curr_hash);
+                } else {
+                    hasher.update(&curr_hash);
+                    hasher.update(&self.root_n_siblings[curr_level]);
+                }
+                let data_hash = hasher.finalize();
+                curr_hash = (*data_hash.as_bytes());
+            }
+            curr_level-=1;
+            index/=2;
+        }
+
+        // if the roots are equal
+        return curr_hash == self.root_n_siblings[0];
+    }
+}
