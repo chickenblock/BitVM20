@@ -1,6 +1,6 @@
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
 
-pub const levels : usize = 12; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
+pub const levels : usize = 11; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);
 
 pub struct bitvm20_merkel_tree {
@@ -161,7 +161,7 @@ impl bitvm20_merkel_proof {
     pub fn serialize_for_script2_3(&self) -> Vec<u8> {
         let mut result : Vec<u8> = vec![];
         let mut index = self.entry_index;
-        for i in (0..12).rev() {
+        for i in (0..levels).rev() {
             result.push(((index >> i) & 0x01) as u8)
         }
         for x in &self.serialized_entry {
