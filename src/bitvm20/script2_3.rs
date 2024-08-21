@@ -50,3 +50,67 @@ pub fn construct_script2_3(winternitz_public_key: &PublicKey) -> Script {
         {32} OP_EQUAL OP_NOT
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::run;
+    use crate::signatures::winternitz::{generate_public_key,sign_digits};
+    use num_bigint::{BigUint,RandomBits};
+    use crate::bitvm20::bitvm20_entry::bitvm20_entry;
+    use crate::bitvm20::bitvm20_merkel_tree::{bitvm20_merkel_tree,bitvm20_merkel_proof};
+
+    // The secret key
+    const winternitz_private_key: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
+
+    #[test]
+    fn test_bitvm20_script2_3() {
+        #[rustfmt::skip]
+
+        let winternitz_public_key = generate_public_key(winternitz_private_key);
+
+        let mut mt = bitvm20_merkel_tree::New();
+        for i in 0..200 {
+            mt.assign(bitvm20_entry{
+                public_key: [((i+24) & 0xff) as u8; 64],
+                nonce: ((i + 400) * 13) as u64,
+                balance: BigUint::from_bytes_be(&[(((i + 13) * 13) & 0xff) as u8; 10]),
+            });
+        }
+
+        // generate proof for 165-th entry
+        let p = mt.generate_proof(165);
+        assert!(!p.is_none(), "Generated none proof");
+        let proof = p.unwrap();
+
+        let data = proof.serialize_for_script2_3();
+
+        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&data);
+
+        println!("data : {:x?}", data);
+        println!("signable_hash_digits : {:x?}", signable_hash_digits);
+
+        let script = script! {
+            for x in (&data).iter().rev() {
+                {(*x)}
+            }
+            { sign_digits(winternitz_private_key, signable_hash_digits) }
+            { construct_script2_3(&winternitz_public_key) }
+        };
+
+        println!(
+            "script 2_3 size:\n \t{:?} bytes",
+            script.len(),
+        );
+
+        run(script! {
+            for x in (&data).iter().rev() {
+                {(*x)}
+            }
+            { sign_digits(winternitz_private_key, signable_hash_digits) }
+            { construct_script2_3(&winternitz_public_key) }
+
+            OP_0 OP_EQUAL // on correct execution this script must fail
+        });
+    }
+}

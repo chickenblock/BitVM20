@@ -162,7 +162,7 @@ impl bitvm20_merkel_proof {
         let mut result : Vec<u8> = vec![];
         let mut index = self.entry_index;
         for i in (0..12).rev() {
-            result.push(((index >> i) & 0xff) as u8)
+            result.push(((index >> i) & 0x01) as u8)
         }
         for x in &self.serialized_entry {
             result.push(*x);
