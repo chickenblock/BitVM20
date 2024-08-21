@@ -4,15 +4,15 @@ pub const levels : usize = 12; // number of elements in the merkel tree is 2^lev
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);
 
 pub struct bitvm20_merkel_tree {
-    pub entries_assigned: usize, // can be atmost (1<<levels)
-    pub entries : [bitvm20_entry; bitvm20_merkel_tree_size], // it can hold atmost (1 << levels) 
+    entries_assigned: usize, // can be atmost (1<<levels)
+    entries : [bitvm20_entry; bitvm20_merkel_tree_size], // it can hold atmost (1 << levels) 
     //index : HashMap<Vec<u8>, usize>, // index to get index of the used entry from the user's public key
 }
 
 pub struct bitvm20_merkel_proof {
-    pub root_n_siblings : [[u8; 32]; (levels + 1)], // root is at index 0, rest all are siblings to the entry or its parents
-    pub serialized_entry : [u8; bitvm20_entry_serialized_size], // serialized entry size
-    pub entry_index: usize,
+    root_n_siblings : [[u8; 32]; (levels + 1)], // root is at index 0, rest all are siblings to the entry or its parents
+    serialized_entry : [u8; bitvm20_entry_serialized_size], // serialized entry size
+    entry_index: usize,
 }
 
 impl bitvm20_merkel_tree {
@@ -156,6 +156,23 @@ impl bitvm20_merkel_proof {
 
         // if the roots are equal
         return curr_hash == self.root_n_siblings[0];
+    }
+
+    pub fn serialize_for_script2_3(&self) -> Vec<u8> {
+        let mut result : Vec<u8> = vec![];
+        let mut index = self.entry_index;
+        for i in (0..12).rev() {
+            result.push(((index >> i) & 0xff) as u8)
+        }
+        for x in &self.serialized_entry {
+            result.push(*x);
+        }
+        for x in self.root_n_siblings.iter().rev() {
+            for y in x {
+                result.push(*y);
+            }
+        }
+        return result;
     }
 }
 
