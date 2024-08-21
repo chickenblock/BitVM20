@@ -91,7 +91,7 @@ impl bitvm20_merkel_tree {
         
         while curr_level_hashes.len() > 1 {
             // insert sibling
-            result.root_n_siblings[curr_level] = curr_level_hashes[index & 0x01];
+            result.root_n_siblings[curr_level] = curr_level_hashes[index ^ 0x01];
 
             // prepare hashes for next level
             let mut x : usize = 0;
@@ -173,17 +173,19 @@ mod test {
         for i in 0..32 {
             mt.assign(bitvm20_entry{
                 public_key: [((i+24) & 0xff) as u8; 64],
-                nonce: (i + 400) * 13,
+                nonce: ((i + 400) * 13) as u64,
                 balance: BigUint::from_bytes_be(&[(((i + 13) * 13) & 0xff) as u8; 10]),
             });
         }
+
+        let root = mt.generate_root();
+        println!("actual root = {:0x?}", root);
         
         for i in 0..32 {
             let p = mt.generate_proof(i);
             assert!(!p.is_none(), "Generated none proof");
             let pr = p.unwrap();
-            let root = mt.generate_root();
-            println!("root = {:?} and root inside proof = {:?}", root, pr.root_n_siblings[0]);
+            println!("proof root = {:0x?}", pr.root_n_siblings[0]);
             assert!(root == pr.root_n_siblings[0], "roots dont match");
             let vl = pr.validate_proof();
             println!("validity of {}-th proof = {}", i, vl);
