@@ -47,6 +47,30 @@ impl bitvm20_merkel_tree {
         return None;
     }
 
+    // genertae just the root of the merkel tree
+    pub fn generate_root(&self) -> [u8; 32] {
+        let mut curr_level_hashes : Vec<[u8; 32]> = vec![];
+        for i in (0..bitvm20_merkel_tree_size) {
+            curr_level_hashes.push(self.entries[i].hash());
+        }
+        
+        while curr_level_hashes.len() > 1 {
+            // prepare hashes for next level
+            let mut x : usize = 0;
+            while x < curr_level_hashes.len() {
+                let mut hasher = blake3::Hasher::new();
+                hasher.update(&curr_level_hashes[x]);
+                hasher.update(&curr_level_hashes[x+1]);
+                let data_hash = hasher.finalize();
+                curr_level_hashes[x/2] = (*data_hash.as_bytes());
+                x += 2;
+            }
+            curr_level_hashes.resize(curr_level_hashes.len()/2, [0; 32]);
+        }
+
+        return curr_level_hashes[0];
+    }
+
     // generate merkel proof for a given index
     pub fn generate_proof(&self, mut index: usize) -> Option<bitvm20_merkel_proof> {
         if index >= bitvm20_merkel_tree_size {
