@@ -47,7 +47,7 @@ impl bitvm20_merkel_tree {
         return None;
     }
 
-    // TODO
+    // generate merkel proof for a given index
     pub fn generate_proof(&self, mut index: usize) -> Option<bitvm20_merkel_proof> {
         if index >= bitvm20_merkel_tree_size {
             return None;
