@@ -4,7 +4,7 @@ pub const levels : usize = 12; // number of elements in the merkel tree is 2^lev
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);
 
 pub struct bitvm20_merkel_tree {
-    //entries_assigned: usize, // can be atmost (1<<levels)
+    entries_assigned: usize, // can be atmost (1<<levels)
     entries : [bitvm20_entry; bitvm20_merkel_tree_size], // it can hold atmost (1 << levels) 
     //index : HashMap<Vec<u8>, usize>, // index to get index of the used entry from the user's public key
 }
@@ -19,20 +19,26 @@ impl bitvm20_merkel_tree {
     // TODO
     fn New() -> bitvm20_merkel_tree {
         return bitvm20_merkel_tree {
+            entries_assigned: 0,
             entries: [default_bitvm20_entry; bitvm20_merkel_tree_size],
         }
     }
 
     // TODO
-    fn assign(&mut self, ent: bitvm20_entry) -> i64 {
-        return -1;
+    fn assign(&mut self, ent: bitvm20_entry) -> Option<usize> {
+        return None;
     }
 
     fn get_entry_by_index(&self, index: usize) -> Option<&bitvm20_entry> {
-        if index >= bitvm20_merkel_tree_size {
+        if index >= self.entries_assigned {
             return None;
         }
         return Some(&(self.entries[index]));
+    }
+
+    // TODO
+    fn get_entry_by_public_key(&self, public_key: &[u8; 64]) -> Option<&bitvm20_entry> {
+        return None;
     }
 
     // TODO
