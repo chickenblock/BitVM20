@@ -21,22 +21,22 @@ pub fn construct_script2_3(winternitz_public_key: &PublicKey) -> Script {
         for _ in 0..levels {
             OP_TOALTSTACK
         }
-        { blake3_var_length(32) }
+        { blake3_var_length(bitvm20_entry_serialized_size) }
         { reorder_blake3_output_for_le_bytes() }
         
         // iterate for levels number of types
         for _ in (1..=levels).rev() {
             OP_FROMALTSTACK
             OP_IF
-                { blake3_var_length(64) }
-                { reorder_blake3_output_for_le_bytes() } // hash in order
-            OP_ELSE
                 // swap the last 2, 32 byte elements
                 for _ in 0..32 {
                     {63} OP_ROLL
                 }
                 { blake3_var_length(64) }
                 { reorder_blake3_output_for_le_bytes() } // hash in reverse order
+            OP_ELSE
+                { blake3_var_length(64) }
+                { reorder_blake3_output_for_le_bytes() } // hash in order
             OP_ENDIF
         }
 
