@@ -6,7 +6,7 @@ use crate::signatures::winternitz::PublicKey;
 
 use crate::hash::blake3::{blake3,blake3_var_length};
 
-use crate::bitvm20::bitvm20_merkel_tree::{levels};
+use crate::bitvm20::bitvm20_merkel_tree::{levels,bitvm20_merkel_tree_size};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry_serialized_size};
 
 // inputs are merkel proof (12 levels) {root, sibling1, sibling2, ... sibling_levels, entry, entry_index_bit0, entry_index_bit1 ... entry_index_bit(levels-1)} in bytes ((levels+1) * 32 + 74 + levels)
@@ -68,7 +68,7 @@ mod test {
         let winternitz_public_key = generate_public_key(winternitz_private_key);
 
         let mut mt = bitvm20_merkel_tree::New();
-        for i in 0..200 {
+        for i in 0..bitvm20_merkel_tree_size {
             mt.assign(bitvm20_entry{
                 public_key: [((i+24) & 0xff) as u8; 64],
                 nonce: ((i + 400) * 13) as u64,
@@ -76,8 +76,8 @@ mod test {
             });
         }
 
-        // generate proof for 165-th entry
-        let p = mt.generate_proof(0);
+        // generate proof for 10-th entry
+        let p = mt.generate_proof(0xa);
         assert!(!p.is_none(), "Generated none proof");
         let proof = p.unwrap();
 
