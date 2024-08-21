@@ -24,9 +24,14 @@ impl bitvm20_merkel_tree {
         }
     }
 
-    // TODO
+    // TODO add the entry to index aswell
     fn assign(&mut self, ent: bitvm20_entry) -> Option<usize> {
-        return None;
+        if self.entries_assigned == bitvm20_merkel_tree_size {
+            return None;
+        }
+        self.entries[self.entries_assigned] = ent;
+        self.entries_assigned+=1;
+        return Some(self.entries_assigned-1);
     }
 
     fn get_entry_by_index(&self, index: usize) -> Option<&bitvm20_entry> {
