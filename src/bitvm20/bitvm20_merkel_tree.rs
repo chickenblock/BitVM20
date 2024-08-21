@@ -4,15 +4,15 @@ pub const levels : usize = 12; // number of elements in the merkel tree is 2^lev
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);
 
 pub struct bitvm20_merkel_tree {
-    entries_assigned: usize, // can be atmost (1<<levels)
-    entries : [bitvm20_entry; bitvm20_merkel_tree_size], // it can hold atmost (1 << levels) 
+    pub entries_assigned: usize, // can be atmost (1<<levels)
+    pub entries : [bitvm20_entry; bitvm20_merkel_tree_size], // it can hold atmost (1 << levels) 
     //index : HashMap<Vec<u8>, usize>, // index to get index of the used entry from the user's public key
 }
 
 pub struct bitvm20_merkel_proof {
-    root_n_siblings : [[u8; 32]; (levels + 1)], // root is at index 0, rest all are siblings to the entry or its parents
-    serialized_entry : [u8; bitvm20_entry_serialized_size], // serialized entry size
-    entry_index: usize,
+    pub root_n_siblings : [[u8; 32]; (levels + 1)], // root is at index 0, rest all are siblings to the entry or its parents
+    pub serialized_entry : [u8; bitvm20_entry_serialized_size], // serialized entry size
+    pub entry_index: usize,
 }
 
 impl bitvm20_merkel_tree {
@@ -122,7 +122,7 @@ impl bitvm20_merkel_proof {
     // validate merke proof
     pub fn validate_proof(&self) -> bool {
         // index out of bounds
-        if(self.entry_index >= bitvm20_merkel_tree_size) {
+        if self.entry_index >= bitvm20_merkel_tree_size {
             return false;
         }
 
@@ -140,7 +140,7 @@ impl bitvm20_merkel_proof {
         while curr_level > 0 {
             {
                 let mut hasher = blake3::Hasher::new();
-                if(index % 2 == 1) { // for odd index
+                if index % 2 == 1 { // for odd index
                     hasher.update(&self.root_n_siblings[curr_level]);
                     hasher.update(&curr_hash);
                 } else {
@@ -156,5 +156,39 @@ impl bitvm20_merkel_proof {
 
         // if the roots are equal
         return curr_hash == self.root_n_siblings[0];
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use num_bigint::{BigUint};
+
+    #[test]
+    fn test_bitvm20_merkel_tree_proofs() {
+        #[rustfmt::skip]
+
+        let mut mt = bitvm20_merkel_tree::New();
+        
+        for i in 0..32 {
+            mt.assign(bitvm20_entry{
+                public_key: [((i+24) & 0xff) as u8; 64],
+                nonce: (i + 400) * 13,
+                balance: BigUint::from_bytes_be(&[(((i + 13) * 13) & 0xff) as u8; 10]),
+            });
+        }
+        
+        for i in 0..32 {
+            let p = mt.generate_proof(i);
+            assert!(!p.is_none(), "Generated none proof");
+            let pr = p.unwrap();
+            let root = mt.generate_root();
+            println!("root = {:?} and root inside proof = {:?}", root, pr.root_n_siblings[0]);
+            assert!(root == pr.root_n_siblings[0], "roots dont match");
+            let vl = pr.validate_proof();
+            println!("validity of {}-th proof = {}", i, vl);
+            assert!(vl, "proof invalid for merkel tree");
+            println!("proof for index {} validated !!!", i)
+        }
     }
 }

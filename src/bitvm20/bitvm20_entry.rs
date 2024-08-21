@@ -3,9 +3,9 @@ use num_bigint::{BigUint};
 pub const bitvm20_entry_serialized_size : usize = (32 + 32 + 8 + 32);
 
 pub struct bitvm20_entry {
-    public_key : [u8; 64], // x, y 32 byte each in uncompressed format
-    nonce : u64, // 64 bit nonce to be serialized in little endian format
-    balance : BigUint, // 256 bit unsigned integer to be serialized in little endian format
+    pub public_key : [u8; 64], // x, y 32 byte each in uncompressed format
+    pub nonce : u64, // 64 bit nonce to be serialized in little endian format
+    pub balance : BigUint, // 256 bit unsigned integer to be serialized in little endian format
 }
 
 pub const default_bitvm20_entry : bitvm20_entry = bitvm20_entry {
@@ -27,7 +27,7 @@ impl bitvm20_entry {
             result[i] = ((self.nonce >> (i-64)) & 0xff) as u8; i+=1;
         }
         let temp = self.balance.to_bytes_le();
-        while i < (64+8+32) {
+        while i < (64+8+32) && (i-64-8) < temp.len() {
             result[i] = temp[i-64-8]; i+=1;
         }
         return result;
