@@ -4,7 +4,7 @@ use crate::bitvm20::utils::{verify_input_data,pop_bytes,data_to_signable_balke3_
 
 use crate::signatures::winternitz::PublicKey;
 
-use crate::hash::blake3::blake3_var_length;
+use crate::hash::blake3::{blake3,blake3_var_length};
 
 use crate::bitvm20::bitvm20_merkel_tree::{levels};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry_serialized_size};
@@ -32,12 +32,9 @@ pub fn construct_script2_3(winternitz_public_key: &PublicKey) -> Script {
                 for _ in 0..32 {
                     {63} OP_ROLL
                 }
-                { blake3_var_length(64) }
-                { reorder_blake3_output_for_le_bytes() } // hash in reverse order
-            OP_ELSE
-                { blake3_var_length(64) }
-                { reorder_blake3_output_for_le_bytes() } // hash in order
             OP_ENDIF
+            { blake3() } // 64 byte blake3
+            { reorder_blake3_output_for_le_bytes() } // hash in reverse order
         }
 
         // compare the last 2 remaining roots
