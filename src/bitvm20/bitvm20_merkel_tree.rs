@@ -12,12 +12,13 @@ pub struct bitvm20_merkel_tree {
 pub struct bitvm20_merkel_proof {
     root_n_siblings : [[u8; 32]; (levels + 1)], // root is at index 0, rest all are siblings to the entry or its parents
     serialized_entry : [u8; bitvm20_entry_serialized_size], // serialized entry size
+    entry_index: usize,
 }
 
 impl bitvm20_merkel_tree {
 
     // TODO
-    fn New() -> bitvm20_merkel_tree {
+    pub fn New() -> bitvm20_merkel_tree {
         return bitvm20_merkel_tree {
             entries_assigned: 0,
             entries: [default_bitvm20_entry; bitvm20_merkel_tree_size],
@@ -25,7 +26,7 @@ impl bitvm20_merkel_tree {
     }
 
     // TODO add the entry to index aswell
-    fn assign(&mut self, ent: bitvm20_entry) -> Option<usize> {
+    pub fn assign(&mut self, ent: bitvm20_entry) -> Option<usize> {
         if self.entries_assigned == bitvm20_merkel_tree_size {
             return None;
         }
@@ -34,7 +35,7 @@ impl bitvm20_merkel_tree {
         return Some(self.entries_assigned-1);
     }
 
-    fn get_entry_by_index(&self, index: usize) -> Option<&bitvm20_entry> {
+    pub fn get_entry_by_index(&self, index: usize) -> Option<&bitvm20_entry> {
         if index >= self.entries_assigned {
             return None;
         }
@@ -42,17 +43,50 @@ impl bitvm20_merkel_tree {
     }
 
     // TODO
-    fn get_entry_by_public_key(&self, public_key: &[u8; 64]) -> Option<&bitvm20_entry> {
+    pub fn get_entry_by_public_key(&self, public_key: &[u8; 64]) -> Option<&bitvm20_entry> {
         return None;
     }
 
     // TODO
-    fn generate_proof(&self) -> bitvm20_merkel_proof {
-        let result : bitvm20_merkel_proof = bitvm20_merkel_proof {
+    pub fn generate_proof(&self, mut index: usize) -> Option<bitvm20_merkel_proof> {
+        if index >= bitvm20_merkel_tree_size {
+            return None;
+        }
+
+        let mut result : bitvm20_merkel_proof = bitvm20_merkel_proof {
             root_n_siblings: [[0; 32]; (levels+1)],
-            serialized_entry: [0; bitvm20_entry_serialized_size],
+            serialized_entry: self.entries[index].to_bytes(),
+            entry_index: index,
         };
-        return result;
+
+        let mut curr_level_hashes : Vec<[u8; 32]> = vec![];
+        for i in (0..bitvm20_merkel_tree_size) {
+            curr_level_hashes.push(self.entries[i].hash());
+        }
+        let mut curr_level = levels;
+        
+        while curr_level_hashes.len() > 1 {
+            // insert sibling
+            result.root_n_siblings[curr_level] = curr_level_hashes[index & 0x01];
+
+            // prepare hashes for next level
+            let mut x : usize = 0;
+            while x < curr_level_hashes.len() {
+                let mut hasher = blake3::Hasher::new();
+                hasher.update(&curr_level_hashes[x]);
+                hasher.update(&curr_level_hashes[x+1]);
+                let data_hash = hasher.finalize();
+                curr_level_hashes[x/2] = (*data_hash.as_bytes());
+                x += 2;
+            }
+            curr_level_hashes.resize(curr_level_hashes.len()/2, [0; 32]);
+            index/=2;
+            curr_level-=1;
+        }
+        // insert root
+        result.root_n_siblings[0] = curr_level_hashes[0];
+
+        return Some(result);
     }
 
     /*fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
