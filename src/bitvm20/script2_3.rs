@@ -80,7 +80,7 @@ mod test {
         }
 
         // generate proof for 165-th entry
-        let p = mt.generate_proof(165);
+        let p = mt.generate_proof(0);
         assert!(!p.is_none(), "Generated none proof");
         let proof = p.unwrap();
 
