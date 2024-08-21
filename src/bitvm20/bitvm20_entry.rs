@@ -8,6 +8,12 @@ pub struct bitvm20_entry {
     balance : BigUint, // 256 bit unsigned integer to be serialized in little endian format
 }
 
+pub const default_bitvm20_entry : bitvm20_entry = bitvm20_entry {
+    public_key: [0; 64],
+    nonce: 0,
+    balance: BigUint::ZERO,
+};
+
 impl bitvm20_entry {
 
     // serialized form of the bitvm20_entry
