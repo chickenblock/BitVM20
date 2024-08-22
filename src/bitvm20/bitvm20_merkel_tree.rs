@@ -1,4 +1,5 @@
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
+use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 
 pub const levels : usize = 5; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);
@@ -186,6 +187,7 @@ impl bitvm20_merkel_proof {
 mod test {
     use super::*;
     use num_bigint::{BigUint};
+    use ark_ff::BigInt;
 
     #[test]
     fn test_bitvm20_merkel_tree_proofs() {
@@ -195,7 +197,7 @@ mod test {
         
         for i in 0..32 {
             mt.assign(bitvm20_entry{
-                public_key: [((i+24) & 0xff) as u8; 64],
+                public_key: G1Affine::new_unchecked(Fq::new(BigInt::zero()), Fq::new(BigInt::zero())),
                 nonce: ((i + 400) * 13) as u64,
                 balance: BigUint::from_bytes_be(&[(((i + 13) * 13) & 0xff) as u8; 10]),
             });

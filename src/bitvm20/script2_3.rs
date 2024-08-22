@@ -57,6 +57,8 @@ mod test {
     use num_bigint::{BigUint,RandomBits};
     use crate::bitvm20::bitvm20_entry::bitvm20_entry;
     use crate::bitvm20::bitvm20_merkel_tree::{bitvm20_merkel_tree,bitvm20_merkel_proof};
+    use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
+    use ark_ff::BigInt;
 
     // The secret key
     const winternitz_private_key: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
@@ -70,7 +72,7 @@ mod test {
         let mut mt = bitvm20_merkel_tree::New();
         for i in 0..bitvm20_merkel_tree_size {
             mt.assign(bitvm20_entry{
-                public_key: [((i+24) & 0xff) as u8; 64],
+                public_key: G1Affine::new_unchecked(Fq::new(BigInt::zero()), Fq::new(BigInt::zero())),
                 nonce: ((i + 400) * 13) as u64,
                 balance: BigUint::from_bytes_be(&[(((i + 13) * 13) & 0xff) as u8; 10]),
             });
