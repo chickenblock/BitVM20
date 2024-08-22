@@ -1,3 +1,5 @@
+use bitcoin::opcodes::all::{OP_ENDIF, OP_FROMALTSTACK, OP_TOALTSTACK};
+
 use crate::bigint::U254;
 use crate::bn254::fp254impl::Fp254Impl;
 use crate::bn254::fq::Fq;
@@ -79,13 +81,25 @@ impl G1Projective {
 
     pub fn double() -> Script {
         script! {
+            { G1Projective::copy(0) }
+            { G1Projective::toaltstack() }
             // Check if the first point is zero
             { G1Projective::is_zero_keep_element(0) }
-            OP_NOTIF
-                // If not, perform a regular addition
-                { G1Projective::nonzero_double() }
+            OP_TOALTSTACK
+            // Perform a regular addition
+            { G1Projective::nonzero_double() }
+
+            // Select result
+            OP_FROMALTSTACK
+            OP_IF
+                // Return original point
+                { G1Projective::drop() }
+                { G1Projective::fromaltstack() }
+            OP_ELSE
+                // Return regular addition result
+                { G1Projective::fromaltstack() }
+                { G1Projective::drop() }
             OP_ENDIF
-            // Otherwise, nothing to do
         }
     }
 
@@ -157,23 +171,45 @@ impl G1Projective {
 
     pub fn add() -> Script {
         script! {
-            // Handle zeros
+            { G1Projective::copy(0) }
+            { G1Projective::toaltstack() }
+            { G1Projective::copy(1) }
+            { G1Projective::toaltstack() }
 
             // Check if the first point is zero
             { G1Projective::is_zero_keep_element(0) }
+            OP_TOALTSTACK
+            // Check if the second point is zero
+            { G1Projective::is_zero_keep_element(1) }
+            OP_TOALTSTACK
+
+            // Perform a regular addition
+            { G1Projective::nonzero_add() }
+
+            // Select result
+            OP_FROMALTSTACK
+            OP_FROMALTSTACK
             OP_IF
-                // If so, drop the zero and return the other summand
+                // First point is zero
+                OP_DROP
+                { G1Projective::drop() }
+                { G1Projective::fromaltstack() }
+                { G1Projective::fromaltstack() }
                 { G1Projective::drop() }
             OP_ELSE
-                // Otherwise, check if the second point is zero
-                { G1Projective::is_zero_keep_element(1) }
                 OP_IF
-                    // If so, drop the zero and return the other summand
-                    { G1Projective::roll(1) }
+                    // Second point is zero
                     { G1Projective::drop() }
+                    { G1Projective::fromaltstack() }
+                    { G1Projective::drop() }
+                    { G1Projective::fromaltstack() }
+
                 OP_ELSE
-                    // Otherwise, perform a regular addition
-                    { G1Projective::nonzero_add() }
+                    // Both summands are non-zero
+                    { G1Projective::fromaltstack() }
+                    { G1Projective::fromaltstack() }
+                    { G1Projective::drop() }
+                    { G1Projective::drop() }
                 OP_ENDIF
             OP_ENDIF
         }
@@ -264,48 +300,73 @@ impl G1Projective {
     // Output Stack: [x/z^2, y/z^3]
     pub fn into_affine() -> Script {
         script!(
-            // Handle zeros
+            // Copy input x and y to altstack
+            { Fq::copy(1) }
+            { Fq::toaltstack() }
+            { Fq::copy(2) }
+            { Fq::toaltstack() }
 
             // 1. Check if the first point is zero
             { G1Projective::is_zero_keep_element(0) }
+            OP_TOALTSTACK
+
+            // 2. Otherwise, check if the point.z is one
+            { Fq::is_one_keep_element(0) }
+            OP_TOALTSTACK
+
+            // Run normal calculation anyway
+            // 2.2 Otherwise, Z is non-one, so it must have an inverse in a field.
+            // conpute Z^-1
+            { Fq::inv() }
+
+            // compute Z^-2
+            { Fq::copy(0) }
+            { Fq::square() }
+            // compute Z^-3 = Z^-2 * z^-1
+            { Fq::copy(0) }
+            { Fq::roll(2) }
+            { Fq::mul() }
+
+            // For now, stack: [x, y, z^-2, z^-3]
+
+            // compute Y/Z^3 = Y * Z^-3
+            { Fq::roll(2) }
+            { Fq::mul() }
+
+            // compute X/Z^2 = X * Z^-2
+            { Fq::roll(1) }
+            { Fq::roll(2) }
+            { Fq::mul() }
+
+            // Return (x,y)
+            { Fq::roll(1) }
+
+            // Select the result
+            OP_FROMALTSTACK
+            OP_FROMALTSTACK
             OP_IF
-                // If so, drop the point and return the affine::identity
-                { G1Projective::drop() }
+                // Z is zero so drop the calculated affine point and return the affine::identity
+                OP_DROP
+                { Fq::drop() }
+                { Fq::drop() }
+                { Fq::fromaltstack() }
+                { Fq::fromaltstack() }
+                { Fq::drop() }
+                { Fq::drop() }
                 { G1Affine::identity() }
             OP_ELSE
-                // 2. Otherwise, check if the point.z is one
-                { Fq::is_one_keep_element(0) }
                 OP_IF
-                    // 2.1 If so, drop the p.z.
+                    // Z was one so drop the the calculated result and return the original input
                     // If Z is one, the point is already normalized, so that: projective.x = affine.x, projective.y = affine.y
                     { Fq::drop() }
-
+                    { Fq::drop() }
+                    { Fq::fromaltstack() }
+                    { Fq::fromaltstack() }
                 OP_ELSE
-                    // 2.2 Otherwise, Z is non-one, so it must have an inverse in a field.
-                    // conpute Z^-1
-                    { Fq::inv() }
-                    // compute Z^-2
-                    { Fq::copy(0) }
-                    { Fq::square() }
-                    // compute Z^-3 = Z^-2 * z^-1
-                    { Fq::copy(0) }
-                    { Fq::roll(2) }
-                    { Fq::mul() }
-
-                    // For now, stack: [x, y, z^-2, z^-3]
-
-                    // compute Y/Z^3 = Y * Z^-3
-                    { Fq::roll(2) }
-                    { Fq::mul() }
-
-                    // compute X/Z^2 = X * Z^-2
-                    { Fq::roll(1) }
-                    { Fq::roll(2) }
-                    { Fq::mul() }
-
-                    // Return (x,y)
-                    { Fq::roll(1) }
-
+                    { Fq::fromaltstack() }
+                    { Fq::fromaltstack() }
+                    { Fq::drop() }
+                    { Fq::drop() }
                 OP_ENDIF
             OP_ENDIF
         )
@@ -551,8 +612,8 @@ mod test {
 
     use crate::bn254::curves::{G1Affine, G1Projective};
     use crate::bn254::fq::Fq;
-    use crate::execute_script;
     use crate::treepp::{script, Script};
+    use crate::{execute_script, execute_script_as_chunks, run};
 
     use crate::bn254::fp254impl::Fp254Impl;
     use ark_bn254::Fr;
@@ -723,7 +784,7 @@ mod test {
     }
 
     #[test]
-    fn test_add() {
+    fn test_add_curves() {
         println!("G1.nonzero_add: {} bytes", G1Projective::add().len());
         let mut prng = ChaCha20Rng::seed_from_u64(0);
 
@@ -757,8 +818,7 @@ mod test {
                 OP_TRUE
             };
             println!("curves::test_add = {} bytes", script.len());
-            let exec_result = execute_script(script);
-            assert!(exec_result.success);
+            run(script);
         }
     }
 
@@ -840,8 +900,17 @@ mod test {
                 "curves::test_projective_into_affine = {} bytes",
                 script.len()
             );
+            let if_interval = script.max_op_if_interval();
+            println!(
+                "Max interval: {:?} debug info: {}, {}",
+                if_interval,
+                script.debug_info(if_interval.0),
+                script.debug_info(if_interval.1)
+            );
+
             let start = start_timer!(|| "execute_script");
-            let exec_result = execute_script(script);
+            let exec_result = execute_script_as_chunks(script, 20_000, 20_000);
+            println!("Exec result: {}", exec_result);
             end_timer!(start);
             assert!(exec_result.success);
         }
@@ -879,6 +948,14 @@ mod test {
                 { G1Projective::equalverify() }
                 OP_TRUE
             };
+            let if_interval = script.max_op_if_interval();
+            println!(
+                "Max interval: {:?} debug info: {}, {}",
+                if_interval,
+                script.debug_info(if_interval.0),
+                script.debug_info(if_interval.1)
+            );
+
             let exec_result = execute_script(script);
             // println!("res: {:100}", exec_result);
             // println!("res stack length: {}", exec_result.final_stack.len());
