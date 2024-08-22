@@ -113,7 +113,13 @@ impl bitvm20_merkel_tree {
         return Some(result);
     }
 
-    /*fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
+    /* TODO
+    fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
+
+    }*/
+
+    /* TODO
+    fn undo_transaction(&self, tx : &bitvm20_transaction) -> bool {
 
     }*/
 }
