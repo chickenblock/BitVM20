@@ -197,7 +197,7 @@ mod test {
         
         for i in 0..32 {
             mt.assign(bitvm20_entry{
-                public_key: G1Affine::new_unchecked(Fq::new(BigInt::new([(i+24) as u64; 4])), Fq::new(BigInt::new([(i+24) as u64; 4]))),
+                public_key: G1Affine::new_unchecked(Fq::new(BigInt::new([(i+25) as u64; 4])), Fq::new(BigInt::new([(i+26) as u64; 4]))),
                 nonce: ((i + 400) * 13) as u64,
                 balance: BigUint::from_bytes_be(&[(((i + 13) * 13) & 0xff) as u8; 10]),
             });
