@@ -1,9 +1,10 @@
 use num_bigint::{BigUint};
+use ark_bn254::{G1Affine, G1Projective};
 
 pub const bitvm20_entry_serialized_size : usize = (32 + 32 + 8 + 32);
 
 pub struct bitvm20_entry {
-    pub public_key : [u8; 64], // x, y 32 byte each in uncompressed format
+    pub public_key : [u8; 64], // x, y of the public key
     pub nonce : u64, // 64 bit nonce to be serialized in little endian format
     pub balance : BigUint, // 256 bit unsigned integer to be serialized in little endian format
 }
@@ -20,6 +21,9 @@ impl bitvm20_entry {
     pub fn to_bytes(&self) -> [u8; bitvm20_entry_serialized_size] {
         let mut result : [u8; bitvm20_entry_serialized_size] = [0; bitvm20_entry_serialized_size];
         let mut i : usize = 0;
+        while i < 32 {
+            result[i] = self.public_key[i]; i+=1;
+        }
         while i < 64 {
             result[i] = self.public_key[i]; i+=1;
         }
