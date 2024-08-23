@@ -32,6 +32,15 @@ impl bitvm20_transaction {
         }
     }
 
+    pub fn pretty_print(&self) {
+        println!("from : {:?}", self.from_public_key);
+        println!("to : {:?}", self.to_public_key);
+        println!("nonce : {:?}", self.from_nonce);
+        println!("value : {:?}", self.value);
+        println!("r : {:?}", self.r);
+        println!("s : {:?}", self.s);
+    }
+
     pub fn new_unsigned(from: &bitvm20_entry, to: &bitvm20_entry, value: &BigUint) -> bitvm20_transaction {
         return Self::new(from, to, value, &G1Affine::new_unchecked(Fq::new(BigInt::zero()), Fq::new(BigInt::zero())), &Fr::new(BigInt::zero()));
     }
@@ -121,11 +130,14 @@ mod test {
         let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
         let to : bitvm20_entry = bitvm20_entry::new(&Fr::rand(&mut prng), 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid to balance"));
 
-        let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invaliud"));
+        let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
+
+        tx.pretty_print();
 
         assert!(!tx.verify_signature(), "signature verification for unsigned transaction not failing as expected");
 
         tx.sign_transaction(&from_private_key);
+        tx.pretty_print();
 
         let is_valid = tx.verify_signature();
         
