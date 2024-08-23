@@ -1,6 +1,8 @@
 use num_bigint::{BigUint};
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::BigInt;
+use ark_ec::PrimeGroup;
+use std::ops::Mul;
 use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
 
 pub const bitvm20_entry_serialized_size : usize = (36 + 36 + 8 + 32);
@@ -18,6 +20,14 @@ pub const default_bitvm20_entry : bitvm20_entry = bitvm20_entry {
 };
 
 impl bitvm20_entry {
+
+    pub fn new(private_key : &Fr, nonce: u64, balance: &BigUint) -> bitvm20_entry {
+        return bitvm20_entry {
+            public_key: G1Affine::from(G1Projective::generator().mul(private_key)),
+            nonce: nonce,
+            balance: balance.clone(),
+        }
+    }
 
     // serialized form of the bitvm20_entry
     pub fn serialize(&self) -> [u8; bitvm20_entry_serialized_size] {
