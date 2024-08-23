@@ -56,4 +56,12 @@ impl bitvm20_transaction {
         }
         return result;
     }
+
+    pub fn sign_transactions(&mut self) {
+
+    }
+
+    pub fn verify_signature(&self) -> bool {
+        return false;
+    }
 }
