@@ -62,7 +62,7 @@ impl bitvm20_transaction {
         result[72..108].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.y)));i+=36;
         result[108..144].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.x)));i+=36;
         while i < 152 {
-            result[i] = ((self.from_nonce >> (i-144)) & 0xff) as u8; i+=1;
+            result[i] = ((self.from_nonce >> ((i-144)*8)) & 0xff) as u8; i+=1;
         }
         let temp = self.value.to_bytes_le();
         while i < 184 && (i-152) < temp.len() {

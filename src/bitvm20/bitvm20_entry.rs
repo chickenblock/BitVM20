@@ -36,7 +36,7 @@ impl bitvm20_entry {
         result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.public_key.y)));i+=36;
         result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.public_key.x)));i+=36;
         while i < (72+8) {
-            result[i] = ((self.nonce >> (i-64)) & 0xff) as u8; i+=1;
+            result[i] = ((self.nonce >> ((i-64)*8)) & 0xff) as u8; i+=1;
         }
         let temp = self.balance.to_bytes_le();
         while i < (72+8+32) && (i-64-8) < temp.len() {
