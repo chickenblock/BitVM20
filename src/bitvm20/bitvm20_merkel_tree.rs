@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 
@@ -7,7 +9,7 @@ pub const bitvm20_merkel_tree_size : usize = (1<<levels);
 pub struct bitvm20_merkel_tree {
     entries_assigned: usize, // can be atmost (1<<levels)
     entries : [bitvm20_entry; bitvm20_merkel_tree_size], // it can hold atmost (1 << levels) 
-    //index : HashMap<Vec<u8>, usize>, // index to get index of the used entry from the user's public key
+    entries_index : HashMap<G1Affine, usize>, // index to get index of the used entry from the user's public key
 }
 
 pub struct bitvm20_merkel_proof {
@@ -18,20 +20,20 @@ pub struct bitvm20_merkel_proof {
 
 impl bitvm20_merkel_tree {
 
-    // TODO
     pub fn New() -> bitvm20_merkel_tree {
         return bitvm20_merkel_tree {
             entries_assigned: 0,
             entries: [default_bitvm20_entry; bitvm20_merkel_tree_size],
+            entries_index: HashMap::new(),
         }
     }
 
-    // TODO add the entry to index aswell
     pub fn assign(&mut self, ent: bitvm20_entry) -> Option<usize> {
         if self.entries_assigned == bitvm20_merkel_tree_size {
             return None;
         }
         self.entries[self.entries_assigned] = ent;
+        self.entries_index.insert(self.entries[self.entries_assigned].public_key.clone(), self.entries_assigned);
         self.entries_assigned+=1;
         return Some(self.entries_assigned-1);
     }
@@ -43,12 +45,23 @@ impl bitvm20_merkel_tree {
         return Some(&(self.entries[index]));
     }
 
-    // TODO
-    pub fn get_entry_by_public_key(&self, public_key: &[u8; 64]) -> Option<&bitvm20_entry> {
-        return None;
+    pub fn get_index_by_public_key(&self, public_key: &G1Affine) -> Option<&usize> {
+        return self.entries_index.get(public_key);
     }
 
-    // genertae just the root of the merkel tree
+    pub fn get_entry_by_public_key(&self, public_key: &G1Affine) -> Option<&bitvm20_entry> {
+        let index_opt = self.entries_index.get(public_key);
+        match index_opt {
+            None => {
+                return None;
+            }
+            Some(index) => {
+                return self.get_entry_by_index(*index);
+            }
+        }
+    }
+
+    // generate just the root of the merkel tree
     pub fn generate_root(&self) -> [u8; 32] {
         let mut curr_level_hashes : Vec<[u8; 32]> = vec![];
         for i in (0..bitvm20_merkel_tree_size) {
