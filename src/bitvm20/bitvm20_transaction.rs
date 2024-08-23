@@ -9,6 +9,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use chrono::Utc;
 
+#[derive(PartialEq, Debug)]
 struct bitvm20_transaction {
     from_public_key: G1Affine,
     to_public_key: G1Affine,
@@ -78,7 +79,7 @@ impl bitvm20_transaction {
                                 Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36]).to_bytes_le()))
                             ),
             to_public_key: G1Affine::new_unchecked(
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[109..144]).to_bytes_le())),
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[108..144]).to_bytes_le())),
                                 Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[72..108]).to_bytes_le()))
                             ),
             from_nonce: 0,
@@ -172,5 +173,35 @@ mod test {
         
         assert!(is_valid, "test failed signature logic (signing or verification) incorrect");
         println!("signature verified !!!");
+    }
+
+    use super::*;
+    use ark_ff::UniformRand;
+    use chrono::Utc;
+    use rand_chacha::ChaCha20Rng;
+    use rand::SeedableRng;
+
+    #[test]
+    fn test_bitvm20_transaction_serde() {
+        #[rustfmt::skip]
+
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
+
+        let from_private_key : Fr = Fr::rand(&mut prng);
+
+        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
+        let to : bitvm20_entry = bitvm20_entry::new(&Fr::rand(&mut prng), 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid to balance"));
+
+        let mut tx1 = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
+        tx1.sign_transaction(&from_private_key);
+
+        let s = tx1.serialize();
+
+        let tx2 = bitvm20_transaction::deserialize(&s);
+
+        println!("{:#?}", tx1);
+        println!("{:#?}", tx2);
+        assert!((tx1 == tx2), "test failed, tx1 != tx2, bug in serializer or deserializer");
+        println!("tx1 == tx2 -> {}", (tx1 == tx2));
     }
 }
