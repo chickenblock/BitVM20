@@ -20,7 +20,7 @@ pub struct bitvm20_merkel_proof {
 
 impl bitvm20_merkel_tree {
 
-    pub fn New() -> bitvm20_merkel_tree {
+    pub fn new() -> bitvm20_merkel_tree {
         return bitvm20_merkel_tree {
             entries_assigned: 0,
             entries: [default_bitvm20_entry; bitvm20_merkel_tree_size],
@@ -206,7 +206,7 @@ mod test {
     fn test_bitvm20_merkel_tree_proofs() {
         #[rustfmt::skip]
 
-        let mut mt = bitvm20_merkel_tree::New();
+        let mut mt = bitvm20_merkel_tree::new();
         
         for i in 0..32 {
             mt.assign(bitvm20_entry{

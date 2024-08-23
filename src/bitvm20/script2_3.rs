@@ -69,7 +69,7 @@ mod test {
 
         let winternitz_public_key = generate_public_key(winternitz_private_key);
 
-        let mut mt = bitvm20_merkel_tree::New();
+        let mut mt = bitvm20_merkel_tree::new();
         for i in 0..bitvm20_merkel_tree_size {
             mt.assign(bitvm20_entry{
                 public_key: G1Affine::new_unchecked(Fq::new(BigInt::new([(i+24) as u64; 4])), Fq::new(BigInt::new([(i+24) as u64; 4]))),
