@@ -128,6 +128,11 @@ impl bitvm20_merkel_tree {
     }
 
     /* TODO
+    fn validate_transaction(&self, tx : &bitvm20_transaction) -> bool {
+
+    }*/
+
+    /* TODO
     fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
 
     }*/
