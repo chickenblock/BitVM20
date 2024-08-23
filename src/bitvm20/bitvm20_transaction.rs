@@ -62,7 +62,7 @@ impl bitvm20_transaction {
         return result;
     }
 
-    pub fn sign_transactions(&mut self, private_key : &Fr) {
+    pub fn sign_transaction(&mut self, private_key : &Fr) {
         // k = random scalar
         let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
         let k : Fr = Fr::rand(&mut prng);
@@ -101,5 +101,33 @@ impl bitvm20_transaction {
 
         // R - Rv == e * P
         return G1Projective::from(self.r).add(Rv.neg()) == self.from_public_key.mul(e);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use num_bigint::{BigUint};
+    use ark_ff::BigInt;
+
+    #[test]
+    fn test_bitvm20_transaction_signature_verify() {
+        #[rustfmt::skip]
+
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
+
+        let from_private_key : Fr = Fr::rand(&mut prng);
+
+        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
+        let to : bitvm20_entry = bitvm20_entry::new(&Fr::rand(&mut prng), 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid to balance"));
+
+        let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invaliud"));
+
+        tx.sign_transaction(&from_private_key);
+
+        let is_valid = tx.verify_signature();
+        
+        assert!(is_valid, "test failed signature logic (signing or verification) incorrect");
+        println!("signature verified !!!");
     }
 }
