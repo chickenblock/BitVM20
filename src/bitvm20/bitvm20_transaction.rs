@@ -57,7 +57,7 @@ impl bitvm20_transaction {
         return result;
     }
 
-    pub fn sign_transactions(&mut self) {
+    pub fn sign_transactions(&mut self, private_key : &Fq) {
 
     }
 
