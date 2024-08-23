@@ -7,7 +7,7 @@ use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_b
 
 pub const bitvm20_entry_serialized_size : usize = (36 + 36 + 8 + 32);
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct bitvm20_entry {
     pub public_key : G1Affine, // x, y of the public key
     pub nonce : u64, // 64 bit nonce to be serialized in little endian format
@@ -56,7 +56,7 @@ impl bitvm20_entry {
             balance: BigUint::from_bytes_le(&data[80..112]),
         };
         for i in (72..80) {
-            result.nonce = ((data[i] as u64) << (i-72));
+            result.nonce |= ((data[i] as u64) << ((i-72)*8));
         }
         return result;
     }
@@ -98,6 +98,8 @@ mod test {
         let x1 = bitvm20_entry::new(&Fr::rand(&mut prng), 0x523456789abcdefa, &BigUint::parse_bytes(b"1a5aa55ababaef123456789abcdeffedcba987654321f123456789abcdeba987", 16).expect("failure to parse balance"));
         let s = x1.serialize();
         let x2 = bitvm20_entry::deserialize(&s);
+        println!("{:#?}", x1);
+        println!("{:#?}", x2);
         assert!((x1 == x2), "test failed, x1 != x2, bug in serializer or deserializer");
         println!("x1 == x2 -> {}", (x1 == x2));
     }
