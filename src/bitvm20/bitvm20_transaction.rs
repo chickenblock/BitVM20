@@ -92,6 +92,16 @@ impl bitvm20_transaction {
         return result;
     }
 
+    pub fn deserialize(data : &[u8]) -> bitvm20_transaction {
+        let mut result = bitvm20_transaction::deserialize_without_signature(data);
+        result.r = G1Affine::new_unchecked(
+            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[220..256]).to_bytes_le())),
+            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[184..220]).to_bytes_le()))
+        );
+        result.s = Fr::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[256..292]).to_bytes_le()));
+        return result;
+    }
+
     pub fn sign_transaction(&mut self, private_key : &Fr) {
         // k = random scalar
         let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
