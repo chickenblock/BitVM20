@@ -2,7 +2,7 @@ use num_bigint::BigUint;
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::{BigInt,PrimeField,UniformRand};
 use ark_ec::PrimeGroup;
-use std::ops::Mul;
+use std::ops::{Mul,Add,Neg};
 use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
 use rand::{Rng, SeedableRng};
@@ -72,7 +72,7 @@ impl bitvm20_transaction {
 
         // e = h(Rx || M)
         let mut hasher = blake3::Hasher::new();
-        hasher.update(&serialize_bn254_element(&BigUint::from(R.x)));
+        hasher.update(&serialize_bn254_element(&BigUint::from(G1Affine::from(R).x)));
         hasher.update(&self.serialize_without_signature());
         let data_hash = hasher.finalize();
         let data_hash = data_hash.as_bytes();
@@ -87,6 +87,19 @@ impl bitvm20_transaction {
     }
 
     pub fn verify_signature(&self) -> bool {
-        return false;
+
+        // Rv = s * G
+        let Rv : G1Projective = G1Projective::generator().mul(self.s);
+
+        // e = h(Rx || M)
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(&serialize_bn254_element(&BigUint::from(self.r.x)));
+        hasher.update(&self.serialize_without_signature());
+        let data_hash = hasher.finalize();
+        let data_hash = data_hash.as_bytes();
+        let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+
+        // R - Rv == e * P
+        return G1Projective::from(self.r).add(Rv.neg()) == self.from_public_key.mul(e);
     }
 }
