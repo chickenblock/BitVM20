@@ -71,6 +71,27 @@ impl bitvm20_transaction {
         return result;
     }
 
+    pub fn deserialize_without_signature(data : &[u8]) -> bitvm20_transaction {
+        let mut result : bitvm20_transaction = bitvm20_transaction {
+            from_public_key: G1Affine::new_unchecked(
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72]).to_bytes_le())),
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36]).to_bytes_le()))
+                            ),
+            to_public_key: G1Affine::new_unchecked(
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[109..144]).to_bytes_le())),
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[72..108]).to_bytes_le()))
+                            ),
+            from_nonce: 0,
+            value: BigUint::from_bytes_le(&data[152..184]),
+            r: G1Affine::new_unchecked(Fq::new(BigInt::zero()), Fq::new(BigInt::zero())),
+            s: Fr::new(BigInt::zero()),
+        };
+        for i in (144..152) {
+            result.from_nonce |= ((data[i] as u64) << ((i-144)*8));
+        }
+        return result;
+    }
+
     pub fn sign_transaction(&mut self, private_key : &Fr) {
         // k = random scalar
         let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
