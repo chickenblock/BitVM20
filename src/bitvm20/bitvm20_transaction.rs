@@ -1,6 +1,8 @@
 use num_bigint::BigUint;
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
-use ark_ff::BigInt;
+use ark_ff::{BigInt,PrimeField,UniformRand};
+use ark_ec::PrimeGroup;
+use std::ops::Mul;
 use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
 use rand::{Rng, SeedableRng};
@@ -60,8 +62,28 @@ impl bitvm20_transaction {
         return result;
     }
 
-    pub fn sign_transactions(&mut self, private_key : &Fq) {
+    pub fn sign_transactions(&mut self, private_key : &Fr) {
+        // k = random scalar
         let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
+        let k : Fr = Fr::rand(&mut prng);
+
+        // R = kG
+        let R : G1Projective = G1Projective::generator().mul(k);
+
+        // e = h(Rx || M)
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(&serialize_bn254_element(&BigUint::from(R.x)));
+        hasher.update(&self.serialize_without_signature());
+        let data_hash = hasher.finalize();
+        let data_hash = data_hash.as_bytes();
+        let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+
+        // s = (k - de) mod N
+        let s : Fr = k - (*private_key) * e;
+
+        // R, s is the siganture
+        self.r = G1Affine::from(R);
+        self.s = s;
     }
 
     pub fn verify_signature(&self) -> bool {
