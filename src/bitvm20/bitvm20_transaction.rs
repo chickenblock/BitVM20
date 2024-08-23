@@ -3,6 +3,9 @@ use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::BigInt;
 use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha20Rng;
+use chrono::Utc;
 
 struct bitvm20_transaction {
     from_public_key: G1Affine,
@@ -58,7 +61,7 @@ impl bitvm20_transaction {
     }
 
     pub fn sign_transactions(&mut self, private_key : &Fq) {
-
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
     }
 
     pub fn verify_signature(&self) -> bool {
