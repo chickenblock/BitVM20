@@ -116,8 +116,6 @@ impl bitvm20_transaction {
 #[cfg(test)]
 mod test {
     use super::*;
-    use num_bigint::{BigUint};
-    use ark_ff::BigInt;
 
     #[test]
     fn test_bitvm20_transaction_signature_verify() {

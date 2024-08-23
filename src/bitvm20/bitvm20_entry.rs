@@ -7,6 +7,7 @@ use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_b
 
 pub const bitvm20_entry_serialized_size : usize = (36 + 36 + 8 + 32);
 
+#[derive(PartialEq)]
 pub struct bitvm20_entry {
     pub public_key : G1Affine, // x, y of the public key
     pub nonce : u64, // 64 bit nonce to be serialized in little endian format
@@ -47,7 +48,10 @@ impl bitvm20_entry {
 
     pub fn deserialize(data : &[u8; bitvm20_entry_serialized_size]) -> bitvm20_entry {
         let mut result = bitvm20_entry {
-            public_key: G1Affine::new_unchecked(Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72]).to_bytes_le())), Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36]).to_bytes_le()))),
+            public_key: G1Affine::new_unchecked(
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72]).to_bytes_le())),
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36]).to_bytes_le()))
+                            ),
             nonce: 0,
             balance: BigUint::from_bytes_le(&data[80..112]),
         };
@@ -74,5 +78,27 @@ impl Clone for bitvm20_entry {
             nonce: self.nonce,
             balance: self.balance.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ark_ff::UniformRand;
+    use chrono::Utc;
+    use rand_chacha::ChaCha20Rng;
+    use rand::SeedableRng;
+
+    #[test]
+    fn test_bitvm20_entry_serde() {
+        #[rustfmt::skip]
+
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
+
+        let x1 = bitvm20_entry::new(&Fr::rand(&mut prng), 0x523456789abcdefa, &BigUint::parse_bytes(b"1a5aa55ababaef123456789abcdeffedcba987654321f123456789abcdeba987", 16).expect("failure to parse balance"));
+        let s = x1.serialize();
+        let x2 = bitvm20_entry::deserialize(&s);
+        assert!((x1 == x2), "test failed, x1 != x2, bug in serializer or deserializer");
+        println!("x1 == x2 -> {}", (x1 == x2));
     }
 }
