@@ -123,6 +123,8 @@ mod test {
 
         let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invaliud"));
 
+        assert!(!tx.verify_signature(), "signature verification for unsigned transaction not failing as expected");
+
         tx.sign_transaction(&from_private_key);
 
         let is_valid = tx.verify_signature();
