@@ -20,7 +20,7 @@ pub const default_bitvm20_entry : bitvm20_entry = bitvm20_entry {
 impl bitvm20_entry {
 
     // serialized form of the bitvm20_entry
-    pub fn to_bytes(&self) -> [u8; bitvm20_entry_serialized_size] {
+    pub fn serialize(&self) -> [u8; bitvm20_entry_serialized_size] {
         let mut result : [u8; bitvm20_entry_serialized_size] = [0; bitvm20_entry_serialized_size];
         let mut i : usize = 0;
         result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.public_key.y)));i+=36;
@@ -37,7 +37,7 @@ impl bitvm20_entry {
 
     // blake3 hash of the serialized bitvm20_entry
     pub fn hash(&self) -> [u8; 32] {
-        let serialized = self.to_bytes();
+        let serialized = self.serialize();
         let mut hasher = blake3::Hasher::new();
         hasher.update(&serialized);
         let data_hash = hasher.finalize();

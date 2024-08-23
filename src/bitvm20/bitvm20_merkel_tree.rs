@@ -93,7 +93,7 @@ impl bitvm20_merkel_tree {
 
         let mut result : bitvm20_merkel_proof = bitvm20_merkel_proof {
             root_n_siblings: [[0; 32]; (levels+1)],
-            serialized_entry: self.entries[index].to_bytes(),
+            serialized_entry: self.entries[index].serialize(),
             entry_index: index,
         };
 
