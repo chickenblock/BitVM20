@@ -21,7 +21,7 @@ pub fn serialize_bn254_element(s : &BigUint) -> [u8; 36] {
     return result;
 }
 
-pub fn deserialize_bn254_element(d : &[u8; 36]) -> BigUint {
+pub fn deserialize_bn254_element(d : &[u8]) -> BigUint {
     let mut result : BigUint = BigUint::ZERO;
     let mut bytes_consumed : usize = 0;
     let mut bits_produced : usize = 0;
