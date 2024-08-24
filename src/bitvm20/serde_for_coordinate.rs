@@ -30,7 +30,7 @@ pub fn serialize_bn254_element(_s : &BigUint) -> [u8; 36] {
 
 pub fn deserialize_bn254_element(d : &[u8]) -> BigUint {
     let N : BigUint = BigUint::from_str_radix("30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47", 16).unwrap();
-    let R : BigUint = BigUint::ZERO.add(1 as u64).shl(261 as u64).rem(&N);
+    let Rinv : BigUint = BigUint::from_str_radix("18223d71645e71455ce0bffc0a6ec602ae5dab0851091e61fb9b65ed0584ee8b", 16).unwrap();
 
     let mut result : BigUint = BigUint::ZERO;
     let mut bytes_consumed : usize = 0;
@@ -50,7 +50,7 @@ pub fn deserialize_bn254_element(d : &[u8]) -> BigUint {
         bytes_consumed+=1;
     }
 
-    return result.mul(&R).mul(&R).rem(&N);
+    return result.mul(&Rinv).rem(&N);
 }
 
 #[cfg(test)]
