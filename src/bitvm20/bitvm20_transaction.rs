@@ -10,7 +10,7 @@ use rand_chacha::ChaCha20Rng;
 use chrono::Utc;
 
 #[derive(PartialEq, Debug)]
-struct bitvm20_transaction {
+pub struct bitvm20_transaction {
     from_public_key: G1Affine,
     to_public_key: G1Affine,
     from_nonce: u64,

@@ -86,3 +86,72 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
         {2} OP_EQUAL OP_NOT
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::run;
+    use crate::signatures::winternitz::{generate_public_key,sign_digits};
+    use crate::bitvm20::bitvm20_entry::bitvm20_entry;
+    use crate::bitvm20::bitvm20_transaction::bitvm20_transaction;
+    use num_bigint::{BigUint,RandomBits};
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha20Rng;
+    use chrono::Utc;
+    use ark_bn254::{Fr};
+    use ark_ff::{BigInt,PrimeField,UniformRand};
+
+    // The secret key
+    const winternitz_private_key: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
+
+    #[test]
+    fn test_bitvm20_script5() {
+        #[rustfmt::skip]
+
+        let winternitz_public_key = generate_public_key(winternitz_private_key);
+
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
+
+        let from_private_key : Fr = Fr::rand(&mut prng);
+        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0x0123, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
+        let to : bitvm20_entry = bitvm20_entry::new(&Fr::rand(&mut prng), 0x3456, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid to balance"));
+
+        let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
+        tx.sign_transaction(&from_private_key);
+
+        let mut data: Vec<u8> = vec![];
+        for d in tx.serialize() {
+            data.push(d);
+        }
+
+        assert!(tx.verify_signature(), "rust offchain signature verification did not pass");
+
+        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&data);
+
+        println!("data : {:x?}", data);
+        println!("signable_hash_digits : {:x?}", signable_hash_digits);
+
+        let script = script! {
+            for x in (&data).iter().rev() {
+                {(*x)}
+            }
+            { sign_digits(winternitz_private_key, signable_hash_digits) }
+            { construct_script5(&winternitz_public_key) }
+        };
+
+        println!(
+            "script 4 size:\n \t{:?} bytes",
+            script.len(),
+        );
+
+        run(script! {
+            for x in (&data).iter().rev() {
+                {(*x)}
+            }
+            { sign_digits(winternitz_private_key, signable_hash_digits) }
+            { construct_script5(&winternitz_public_key) }
+
+            OP_0 OP_EQUAL // on correct execution this script must fail
+        });
+    }
+}
