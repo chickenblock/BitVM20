@@ -15,6 +15,11 @@ use crate::bigint::U254;
 // inputs are serialized form of bitvm20_transaction, in that order
 pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
     script!{
+        //{ G1Projective::push_generator() } //not same as 1,2,1
+        /*{ Fq::push_one() }
+        { Fq::push_hex("2") }
+        { Fq::push_one() }*/
+        /*{ G1Projective::into_affine() }*/ //{0x0dadbeef} DEBUG
         { verify_input_data(&winternitz_public_key, 292) }
 
         // LOGIC STARTS HERE
@@ -22,7 +27,7 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
         // generate P
         // clone serialized form of from_public_key (which is at the top of the stack), convert it to G1Affine, then to G1PRojective and then push it to the alt stack, as is
         for _ in (0..72) {
-            {71} OP_ROLL
+            {71} OP_PICK
         }
         { U254::from_bytes() } // for y
         { Fq::toaltstack() } // push y to alt stack
@@ -33,15 +38,15 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
         
         // generate e = h(Rx || M)
         for _ in (0..36) {// copy Rx to the top of ths stack giving ud Rx || tx on the stack
-            {255} OP_ROLL
+            {255} OP_PICK
         }
         { blake3_var_length(220) } // hash (Rx || tx-without the singature attributes)
         { reorder_blake3_output_for_le_bytes() }
         { Fr::from_hash() }
 
         // now e is at the top if the stack
-        { G1Projective::toaltstack() } // pop G1Projective P to the top of the stack
-        { Fr::copy(3) } // bring e to the top of the stack, and P right under it
+        { G1Projective::fromaltstack() } // pop G1Projective P to the top of the stack
+        { Fr::roll(3) } // bring e to the top of the stack, and P right under it
         { G1Projective::scalar_mul() } // egenerate eP = e * P
         { G1Projective::toaltstack() } // push eP to alt stack
 
@@ -59,6 +64,7 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
 
         // push generator on the stack G
         { G1Projective::push_generator() }
+        /*{ G1Projective::into_affine() }*/ //{0x0dadbeef} DEBUG
         { Fr::fromaltstack() } // bring s back to the stack
 
         // produce Rv = s * G
@@ -78,7 +84,7 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
 
         // check that they are unrqual
         OP_0 OP_TOALTSTACK
-        { Fq::copy(2) }
+        { Fq::roll(2) }
         { Fq::equal(1, 0) }
         OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
         { Fq::equal(1, 0) }

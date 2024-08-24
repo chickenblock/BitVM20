@@ -140,6 +140,17 @@ impl bitvm20_transaction {
         let data_hash = data_hash.as_bytes();
         let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
 
+        println!("P = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((self.from_public_key.y))), serialize_bn254_element(&BigUint::from((self.from_public_key.x))));
+        println!("e = {:0x?}\n", serialize_bn254_element(&BigUint::from(e)));
+        println!("eP = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(self.from_public_key.mul(e)).y))), serialize_bn254_element(&BigUint::from((G1Affine::from(self.from_public_key.mul(e)).x))));
+
+        println!("s = {:0x?}\n", serialize_bn254_element(&BigUint::from(self.s)));
+        println!("G = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::generator()).y))), serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::generator()).x))));
+
+        println!("R = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((self.r.y))), serialize_bn254_element(&BigUint::from((self.r.x))));
+        println!("Rv = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((Rv.y))), serialize_bn254_element(&BigUint::from((Rv.x))));
+        println!("R - Rv = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::from(self.r).add(Rv.neg())).y))), serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::from(self.r).add(Rv.neg())).x))));
+
         // R - Rv == e * P
         return G1Projective::from(self.r).add(Rv.neg()) == self.from_public_key.mul(e);
     }
