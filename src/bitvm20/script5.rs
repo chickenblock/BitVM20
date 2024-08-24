@@ -20,7 +20,7 @@ pub fn construct_script1(winternitz_public_key: &PublicKey) -> Script {
         // generate P
         // clone serialized form of from_public_key (which is at the top of the stack), convert it to G1Affine, then to G1PRojective and then push it to the alt stack, as is
         for _ in (0..72) {
-            {73} OP_ROLL
+            {71} OP_ROLL
         }
         { U254::from_bytes() } // for y
         { Fq::toaltstack() } // push y to alt stack
