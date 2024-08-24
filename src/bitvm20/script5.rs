@@ -13,7 +13,7 @@ use crate::bn254::fp254impl::Fp254Impl;
 use crate::bigint::U254;
 
 // inputs are serialized form of bitvm20_transaction, in that order
-pub fn construct_script1(winternitz_public_key: &PublicKey) -> Script {
+pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
     script!{
         { verify_input_data(&winternitz_public_key, 292) }
 
