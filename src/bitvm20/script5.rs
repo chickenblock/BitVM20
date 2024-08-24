@@ -118,13 +118,12 @@ mod test {
 
         let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
         tx.sign_transaction(&from_private_key);
+        assert!(tx.verify_signature(), "rust offchain signature verification did not pass");
 
         let mut data: Vec<u8> = vec![];
         for d in tx.serialize() {
             data.push(d);
         }
-
-        assert!(tx.verify_signature(), "rust offchain signature verification did not pass");
 
         let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&data);
 
