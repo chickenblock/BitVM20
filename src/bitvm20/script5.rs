@@ -1,6 +1,6 @@
 use crate::treepp::{script, Script};
 
-use crate::bitvm20::utils::{verify_input_data,pop_bytes,data_to_signable_balke3_digits};
+use crate::bitvm20::utils::{verify_input_data,pop_bytes,data_to_signable_balke3_digits, reorder_blake3_output_for_le_bytes};
 
 use crate::signatures::winternitz::PublicKey;
 
@@ -45,5 +45,44 @@ pub fn construct_script1(winternitz_public_key: &PublicKey) -> Script {
         { G1Projective::scalar_mul() } // egenerate eP = e * P
         { G1Projective::toaltstack() } // push eP to alt stack
 
+        // now the top of the stack is signature r, we will convert it to G1Projective R
+        { U254::from_bytes() } // for y
+        { Fq::toaltstack() } // push y to alt stack
+        { U254::from_bytes() } // for x
+        { Fq::fromaltstack() } // pop y from alt stack, now we have G1Affine form of R on the stack
+        { G1Affine::into_projective() } // convert G1Affine R to G1Projective R
+        { G1Projective::toaltstack() } // push R back to alt stack
+
+        // now the top of the stack is signature s
+        { U254::from_bytes() } // s into its Fr form
+        { Fr::toaltstack() } // push s to alt stack
+
+        // push generator on the stack G
+        { G1Projective::push_generator() }
+        { Fr::fromaltstack() } // bring s back to the stack
+
+        // produce Rv = s * G
+        { G1Projective::scalar_mul() }
+
+        // produce R - Rv
+        { G1Projective::neg() } // top of the stack is Rv, so first negate it
+        { G1Projective::fromaltstack() } // now the stack contains :: -Rv Rv <- top
+        { G1Projective::add() } // add them
+
+        // convert R - Rv to G1Affine
+        { G1Projective::into_affine() }
+
+        // move eP to the stack, and convert it to affine
+        { G1Projective::fromaltstack() }
+        { G1Projective::into_affine() }
+
+        // check that they are unrqual
+        OP_0 OP_TOALTSTACK
+        { Fq::copy(2) }
+        { Fq::equal(1, 0) }
+        OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
+        { Fq::equal(1, 0) }
+        OP_FROMALTSTACK OP_ADD
+        {2} OP_EQUAL OP_NOT
     }
 }
