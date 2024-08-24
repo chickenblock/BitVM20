@@ -1,6 +1,13 @@
 use num_bigint::BigUint;
+use num_traits::Num;
+use std::ops::{Add, Mul, Shl, Rem};
 
-pub fn serialize_bn254_element(s : &BigUint) -> [u8; 36] {
+pub fn serialize_bn254_element(_s : &BigUint) -> [u8; 36] {
+    let N : BigUint = BigUint::from_str_radix("30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47", 16).unwrap();
+    let R : BigUint = BigUint::ZERO.add(1 as u64).shl(261 as u64).rem(&N);
+
+    let s = _s.mul(&R).rem(&N);
+
     let mut result : [u8; 36] = [0; 36];
     let mut bits_consumed : usize = 0;
     let mut bytes_produced : usize = 0;
@@ -22,6 +29,9 @@ pub fn serialize_bn254_element(s : &BigUint) -> [u8; 36] {
 }
 
 pub fn deserialize_bn254_element(d : &[u8]) -> BigUint {
+    let N : BigUint = BigUint::from_str_radix("30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47", 16).unwrap();
+    let R : BigUint = BigUint::ZERO.add(1 as u64).shl(261 as u64).rem(&N);
+
     let mut result : BigUint = BigUint::ZERO;
     let mut bytes_consumed : usize = 0;
     let mut bits_produced : usize = 0;
@@ -39,7 +49,8 @@ pub fn deserialize_bn254_element(d : &[u8]) -> BigUint {
         }
         bytes_consumed+=1;
     }
-    return result;
+
+    return result.mul(&R).mul(&R).rem(&N);
 }
 
 #[cfg(test)]
