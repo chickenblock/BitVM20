@@ -18,7 +18,7 @@ pub struct bitvm20_transaction {
 
     // signature attributes
     r: G1Affine,
-    s: Fr,
+    pub s: Fr,
 }
 
 impl bitvm20_transaction {
@@ -49,19 +49,19 @@ impl bitvm20_transaction {
     pub fn serialize(&self) -> [u8; 292] {
         let mut result : [u8; 292] = [0; 292];
         result[0..184].copy_from_slice(&self.serialize_without_signature());
-        result[184..220].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.r.y)));
-        result[220..256].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.r.x)));
-        result[256..292].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.s)));
+        result[184..220].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.r.y), true));
+        result[220..256].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.r.x), true));
+        result[256..292].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.s), false));
         return result;
     }
 
     pub fn serialize_without_signature(&self) -> [u8; 184] {
         let mut result : [u8; 184] = [0; 184];
         let mut i : usize = 0;
-        result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.from_public_key.y)));i+=36;
-        result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.from_public_key.x)));i+=36;
-        result[72..108].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.y)));i+=36;
-        result[108..144].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.x)));i+=36;
+        result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.from_public_key.y), true));i+=36;
+        result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.from_public_key.x), true));i+=36;
+        result[72..108].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.y), true));i+=36;
+        result[108..144].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.x), true));i+=36;
         while i < 152 {
             result[i] = ((self.from_nonce >> ((i-144)*8)) & 0xff) as u8; i+=1;
         }
@@ -75,12 +75,12 @@ impl bitvm20_transaction {
     pub fn deserialize_without_signature(data : &[u8]) -> bitvm20_transaction {
         let mut result : bitvm20_transaction = bitvm20_transaction {
             from_public_key: G1Affine::new_unchecked(
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72]).to_bytes_le())),
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36]).to_bytes_le()))
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72], true).to_bytes_le())),
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36], true).to_bytes_le()))
                             ),
             to_public_key: G1Affine::new_unchecked(
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[108..144]).to_bytes_le())),
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[72..108]).to_bytes_le()))
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[108..144], true).to_bytes_le())),
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[72..108], true).to_bytes_le()))
                             ),
             from_nonce: 0,
             value: BigUint::from_bytes_le(&data[152..184]),
@@ -96,10 +96,10 @@ impl bitvm20_transaction {
     pub fn deserialize(data : &[u8]) -> bitvm20_transaction {
         let mut result = bitvm20_transaction::deserialize_without_signature(data);
         result.r = G1Affine::new_unchecked(
-            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[220..256]).to_bytes_le())),
-            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[184..220]).to_bytes_le()))
+            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[220..256], true).to_bytes_le())),
+            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[184..220], true).to_bytes_le()))
         );
-        result.s = Fr::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[256..292]).to_bytes_le()));
+        result.s = Fr::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[256..292], false).to_bytes_le()));
         return result;
     }
 
@@ -113,7 +113,7 @@ impl bitvm20_transaction {
 
         // e = h(Rx || M)
         let mut hasher = blake3::Hasher::new();
-        hasher.update(&serialize_bn254_element(&BigUint::from(G1Affine::from(R).x)));
+        hasher.update(&serialize_bn254_element(&BigUint::from(G1Affine::from(R).x), true));
         hasher.update(&self.serialize_without_signature());
         let data_hash = hasher.finalize();
         let data_hash = data_hash.as_bytes();
@@ -134,22 +134,22 @@ impl bitvm20_transaction {
 
         // e = h(Rx || M)
         let mut hasher = blake3::Hasher::new();
-        hasher.update(&serialize_bn254_element(&BigUint::from(self.r.x)));
+        hasher.update(&serialize_bn254_element(&BigUint::from(self.r.x), true));
         hasher.update(&self.serialize_without_signature());
         let data_hash = hasher.finalize();
         let data_hash = data_hash.as_bytes();
         let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
 
-        println!("P = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((self.from_public_key.y))), serialize_bn254_element(&BigUint::from((self.from_public_key.x))));
-        println!("e = {:0x?}\n", serialize_bn254_element(&BigUint::from(e)));
-        println!("eP = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(self.from_public_key.mul(e)).y))), serialize_bn254_element(&BigUint::from((G1Affine::from(self.from_public_key.mul(e)).x))));
+        println!("P = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((self.from_public_key.y)), true), serialize_bn254_element(&BigUint::from((self.from_public_key.x)), true));
+        println!("e = {:0x?}\n", serialize_bn254_element(&BigUint::from(e), false));
+        println!("eP = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(self.from_public_key.mul(e)).y)), true), serialize_bn254_element(&BigUint::from((G1Affine::from(self.from_public_key.mul(e)).x)), true));
 
-        println!("s = {:0x?}\n", serialize_bn254_element(&BigUint::from(self.s)));
-        println!("G = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::generator()).y))), serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::generator()).x))));
+        println!("s = {:0x?}\n", serialize_bn254_element(&BigUint::from(self.s),false));
+        println!("G = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::generator()).y)), true), serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::generator()).x)), true));
 
-        println!("R = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((self.r.y))), serialize_bn254_element(&BigUint::from((self.r.x))));
-        println!("Rv = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((Rv.y))), serialize_bn254_element(&BigUint::from((Rv.x))));
-        println!("R - Rv = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::from(self.r).add(Rv.neg())).y))), serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::from(self.r).add(Rv.neg())).x))));
+        println!("R = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((self.r.y)), true), serialize_bn254_element(&BigUint::from((self.r.x)), true));
+        println!("Rv = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(Rv).y)), true), serialize_bn254_element(&BigUint::from((G1Affine::from(Rv).x)), true));
+        println!("R - Rv = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::from(self.r).add(Rv.neg())).y)), true), serialize_bn254_element(&BigUint::from((G1Affine::from(G1Projective::from(self.r).add(Rv.neg())).x)), true));
 
         // R - Rv == e * P
         return G1Projective::from(self.r).add(Rv.neg()) == self.from_public_key.mul(e);

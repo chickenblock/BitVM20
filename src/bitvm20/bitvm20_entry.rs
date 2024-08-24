@@ -34,8 +34,8 @@ impl bitvm20_entry {
     pub fn serialize(&self) -> [u8; bitvm20_entry_serialized_size] {
         let mut result : [u8; bitvm20_entry_serialized_size] = [0; bitvm20_entry_serialized_size];
         let mut i : usize = 0;
-        result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.public_key.y)));i+=36;
-        result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.public_key.x)));i+=36;
+        result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.public_key.y), true));i+=36;
+        result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.public_key.x), true));i+=36;
         while i < (80) {
             result[i] = ((self.nonce >> ((i-72)*8)) & 0xff) as u8; i+=1;
         }
@@ -49,8 +49,8 @@ impl bitvm20_entry {
     pub fn deserialize(data : &[u8; bitvm20_entry_serialized_size]) -> bitvm20_entry {
         let mut result = bitvm20_entry {
             public_key: G1Affine::new_unchecked(
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72]).to_bytes_le())),
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36]).to_bytes_le()))
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72], true).to_bytes_le())),
+                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36], true).to_bytes_le()))
                             ),
             nonce: 0,
             balance: BigUint::from_bytes_le(&data[80..112]),
