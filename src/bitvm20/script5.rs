@@ -35,8 +35,13 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
         for _ in (0..36) {// copy Rx to the top of ths stack giving ud Rx || tx on the stack
             {255} OP_PICK
         }
-        { blake3_var_length(220) } // hash (Rx || tx-without the singature attributes)
-        { reorder_blake3_output_for_le_bytes() }
+        { blake3_var_length(220) } // hash (Rx || tx-without the signature attributes)
+
+        // the below Fr::from_hash call requires us to rever the output of the blake3_var_length
+        // do not make the mistake of calling reorder_blake3_output_for_le_bytes()
+        for i in 0..32 {
+            {i} OP_ROLL
+        }
         { Fr::from_hash() }
 
         // now e is at the top if the stack
@@ -76,8 +81,6 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
         { G1Projective::fromaltstack() }
         { G1Projective::into_affine() }
 
-        DEBUG
-
         // check that they are unequal
         OP_0 OP_TOALTSTACK
         { Fq::roll(2) }
@@ -105,53 +108,6 @@ mod test {
 
     // The secret key
     const winternitz_private_key: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
-
-    /*use crate::bitvm20::serde_for_coordinate::serialize_bn254_element;
-    //use ark_ff::{BigInt,PrimeField,UniformRand};
-    use ark_ec::PrimeGroup;
-    use std::ops::{Mul,Add,Neg};
-    #[test]
-    fn test_temp() {
-        #[rustfmt::skip]
-
-        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
-
-        let from_private_key : Fr = Fr::rand(&mut prng);
-        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0x0123, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
-        let to : bitvm20_entry = bitvm20_entry::new(&Fr::rand(&mut prng), 0x3456, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid to balance"));
-
-        let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
-        tx.sign_transaction(&from_private_key);
-        assert!(tx.verify_signature(), "rust offchain signature verification did not pass");
-
-        let t = ark_bn254::G1Affine::from(ark_bn254::G1Projective::generator().mul(tx.s));
-
-        println!("t = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((t.y)), true), serialize_bn254_element(&BigUint::from((t.x)), true));
-
-        let s = script! {
-            { G1Projective::push_generator() }
-            for x in (&serialize_bn254_element(&BigUint::from(tx.s), false)).iter().rev() {
-                {(*x)}
-            }
-            { U254::from_bytes() }
-            { G1Projective::scalar_mul() }
-            { G1Projective::into_affine() }
-            for x in (&serialize_bn254_element(&BigUint::from(t.x), true)).iter().rev() {
-                {(*x)}
-            }
-            { U254::from_bytes() }
-            for x in (&serialize_bn254_element(&BigUint::from(t.y), true)).iter().rev() {
-                {(*x)}
-            }
-            { U254::from_bytes() }
-            { G1Affine::equalverify() }
-            OP_TRUE
-        };
-
-        println!("script length : {}", s.len());
-
-        run(s)
-    }*/
 
     #[test]
     fn test_bitvm20_script5() {
@@ -188,7 +144,7 @@ mod test {
         };
 
         println!(
-            "script 4 size:\n \t{:?} bytes",
+            "script 5 size:\n \t{:?} bytes",
             script.len(),
         );
 
