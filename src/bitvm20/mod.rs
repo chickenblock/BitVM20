@@ -8,3 +8,4 @@ pub mod bitvm20_entry;
 pub mod bitvm20_merkel_tree;
 pub mod bitvm20_transaction;
 pub mod serde_for_coordinate;
+pub mod from_hash;

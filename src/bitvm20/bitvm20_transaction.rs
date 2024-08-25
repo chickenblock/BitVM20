@@ -117,7 +117,8 @@ impl bitvm20_transaction {
         hasher.update(&self.serialize_without_signature());
         let data_hash = hasher.finalize();
         let data_hash = data_hash.as_bytes();
-        let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+        //let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+        let e : Fr = Fr::from(crate::bitvm20::from_hash::from_hash(data_hash));
 
         // s = (k - de) mod N
         let s : Fr = k - (*private_key) * e;
@@ -138,7 +139,8 @@ impl bitvm20_transaction {
         hasher.update(&self.serialize_without_signature());
         let data_hash = hasher.finalize();
         let data_hash = data_hash.as_bytes();
-        let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+        //let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+        let e : Fr = Fr::from(crate::bitvm20::from_hash::from_hash(data_hash));
 
         println!("P = {:0x?}, {:0x?}\n", serialize_bn254_element(&BigUint::from((self.from_public_key.y)), true), serialize_bn254_element(&BigUint::from((self.from_public_key.x)), true));
         println!("e = {:0x?}\n", serialize_bn254_element(&BigUint::from(e), false));
