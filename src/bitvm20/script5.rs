@@ -60,10 +60,9 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
         // push generator on the stack G
         { G1Projective::push_generator() }
         { Fr::fromaltstack() } // bring s back to the stack
-        {0x0dadbeef} DEBUG
+
         // produce Rv = s * G
         { G1Projective::scalar_mul() }
-        { G1Projective::into_affine() } {0x0dadbeef} DEBUG
 
         // produce R - Rv
         { G1Projective::neg() } // top of the stack is Rv, so first negate it
@@ -77,7 +76,9 @@ pub fn construct_script5(winternitz_public_key: &PublicKey) -> Script {
         { G1Projective::fromaltstack() }
         { G1Projective::into_affine() }
 
-        // check that they are unrqual
+        DEBUG
+
+        // check that they are unequal
         OP_0 OP_TOALTSTACK
         { Fq::roll(2) }
         { Fq::equal(1, 0) }
