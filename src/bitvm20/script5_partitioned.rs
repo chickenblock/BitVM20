@@ -12,7 +12,7 @@ use crate::bn254::fr::Fr;
 use crate::bn254::fp254impl::Fp254Impl;
 use crate::bigint::U254;
 
-// inputs are serialized form of bitvm20_transaction (without signature), Rx signature and then e in its Fr form and the winternitz signatures, in that order
+// inputs are serialized form of Rx from signature, bitvm20_transaction (without signature) and then e in its Fr form and the winternitz signatures, in that order
 // evaluates if e != blake3(Rx || bitvm20_transaction)
 pub fn construct_script5_1(winternitz_public_key: &PublicKey) -> Script {
     script!{
@@ -23,8 +23,8 @@ pub fn construct_script5_1(winternitz_public_key: &PublicKey) -> Script {
     }
 }
 
-// inputs are serialized form of (Ri-1, Pi, s in bits, i, Pi+1, Ri), and winternitz signatures in that order
-// evaulates (Pi+1 != 2 * Pi) || (Ri != Ri-1 + s[i] * Pi)
+// inputs are serialized form of (Pi+1, Pi, Ri, i, s in bits, Ri-1) (Ri-1, Pi, s in bits, i, Pi+1, Ri), and winternitz signatures in that order
+// evaulates false ||  (Pi+1 != 2 * Pi) || (Ri != Ri-1 + s[i] * Pi)
 // 2 sets of parameters for evaulating e*P and s*G
 pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
     script!{
