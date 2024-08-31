@@ -12,18 +12,36 @@ use crate::bn254::fr::Fr;
 use crate::bn254::fp254impl::Fp254Impl;
 use crate::bigint::U254;
 
-// inputs are serialized form of Rx from signature, bitvm20_transaction (without signature) and then e in its Fr form and the winternitz signatures, in that order
+// inputs are serialized form of Rx from signature, bitvm20_transaction (without signature) and then e, in that order
 // evaluates if e != blake3(Rx || bitvm20_transaction)
 pub fn construct_script5_1(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 292) }
+        { verify_input_data(&winternitz_public_key, 36 + 184 + 36) }
 
         // LOGIC STARTS HERE
 
+        { blake3_var_length(220) } // hash (Rx || tx-without the signature attributes)
+
+        // the below Fr::from_hash call requires us to rever the output of the blake3_var_length
+        // do not make the mistake of calling reorder_blake3_output_for_le_bytes()
+        for i in 0..32 {
+            {i} OP_ROLL
+        }
+        { Fr::from_hash() }
+
+        { Fr::toaltstack() } // push generated e to the stack
+
+        { U254::from_bytes() } // convert input e to its Fr form
+
+        { Fr::fromaltstack() } // now both the e (generated and the input) are on the stack
+
+        { Fr::equal(1, 0) } // compare them both
+
+        OP_NOT // release funds, if they are not equal
     }
 }
 
-// inputs are serialized form of (Pi+1, Pi, Ri, i, s in bits, Ri-1) (Ri-1, Pi, s in bits, i, Pi+1, Ri), and winternitz signatures in that order
+// inputs are serialized form of (Pi+1, Pi, Ri, i, s in bits, Ri-1) (Ri-1, Pi, s in bits, i, Pi+1, Ri)
 // evaulates false ||  (Pi+1 != 2 * Pi) || (Ri != Ri-1 + s[i] * Pi)
 // 2 sets of parameters for evaulating e*P and s*G
 pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
@@ -35,7 +53,7 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
     }
 }
 
-// inputs are serialized form of (R, s*G, e*P) and the winternitz signatures, in that order
+// inputs are serialized form of (R, s*G, e*P)
 // evauates R - s * G != e * P
 pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
     script!{
