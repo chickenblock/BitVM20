@@ -18,7 +18,7 @@ pub struct bitvm20_transaction {
 
     // signature attributes
     r: G1Affine,
-    pub s: Fr,
+    s: Fr,
 }
 
 impl bitvm20_transaction {
