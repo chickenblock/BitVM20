@@ -56,12 +56,12 @@ fn G1Affine_equal() -> Script {
     }
 }
 
-// inputs are serialized form of (Pi+1, Pi, Ri, i, s in bits 0 to 253, Ri-1)
+// inputs are serialized form of (Pi+1, Pi, Ri, i, s, Ri-1)
 // evaulates false || (Pi+1 != 2 * Pi) || (Ri != Ri-1 + s[i] * Pi)
 // 2 sets of parameters for evaulating e*P and s*G
 pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2 + 1 + 254 + 36 * 2) }
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2 + 1 + 36 + 36 * 2) }
 
         // LOGIC STARTS HERE
 
@@ -112,7 +112,11 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
         { Fq::toaltstack() }{ Fq::toaltstack() }
         { G1Projective::toaltstack() }
 
-        // now the top of the stack are i and then bits of s starting with 0
+        // now the top of the stack are i and then s starting with 0
+        OP_TOALTSTACK
+        { U254::from_bytes() }
+        { Fr::convert_to_le_bits() }
+        OP_FROMALTSTACK
         OP_ROLL // fetch the ith bit
         // drop the rest of the 253 bits
         OP_TOALTSTACK
@@ -190,7 +194,7 @@ pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
         OP_NOT
     }
 }
-/*
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -234,20 +238,25 @@ mod test {
         println!("data : {:x?}", data);
         println!("signable_hash_digits : {:x?}", signable_hash_digits);
 
-        let script = script! {
-            for x in (&data).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script5(&winternitz_public_key) }
-        };
+        let mut scripts : Vec<Script> = vec![];
+        scripts.push(script! {
+            { construct_script5_1(&winternitz_public_key) }
+        });
+        scripts.push(script! {
+            { construct_script5_2(&winternitz_public_key) }
+        });
+        scripts.push(script! {
+            { construct_script5_3(&winternitz_public_key) }
+        });
 
         println!(
-            "script 5 size:\n \t{:?} bytes",
-            script.len(),
+            "script 5 size:\n \t{:?}, {:?}, {:?} bytes",
+            scripts[0].len(),
+            scripts[1].len(),
+            scripts[2].len()
         );
 
-        run(script! {
+        /*run(script! {
             for x in (&data).iter().rev() {
                 {(*x)}
             }
@@ -255,7 +264,6 @@ mod test {
             { construct_script5(&winternitz_public_key) }
 
             OP_0 OP_EQUAL // on correct execution this script must fail
-        });
+        });*/
     }
 }
-*/
