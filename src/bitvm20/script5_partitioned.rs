@@ -61,7 +61,7 @@ fn G1Affine_equal() -> Script {
 // 2 sets of parameters for evaulating e*P and s*G
 pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 292) }
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2 + 1 + 254 + 36 * 2) }
 
         // LOGIC STARTS HERE
 
@@ -150,10 +150,44 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
 // evauates R - s * G != e * P
 pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 292) }
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2) }
 
         // LOGIC STARTS HERE
 
+        // convert R into into its G1Affine and then into G1Projective from, and push it to altstack
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
+        { G1Projective::toaltstack() }
+
+        // convert s * G into its G1Affine and them into G1Projective form, and then negate it
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
+        { G1Projective::neg() }
+
+        // add the R + (-s*G)
+        { G1Projective::fromaltstack() }
+        { G1Projective::add() }
+        { G1Projective::toaltstack() }
+
+        // convert e*P into its G1Affine form
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+
+        // now move the addition result to the stack and convert it to affine
+        { G1Projective::fromaltstack() }
+        { G1Projective::into_affine() }
+
+        // compare them
+        { G1Affine_equal() }
+        OP_NOT
     }
 }
 /*
