@@ -244,6 +244,7 @@ mod test {
     use chrono::Utc;
     use ark_bn254::{Fr};
     use ark_ff::{BigInt,PrimeField,UniformRand};
+    use std::ops::{Add, Mul};
 
     // The secret key
     const winternitz_private_key: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
@@ -308,5 +309,33 @@ mod test {
 
             OP_0 OP_EQUAL // on correct execution this script must fail
         });*/
+    }
+
+    use ark_ec::CurveGroup;
+    #[test]
+    fn test_projective_equal() {
+        let equal = G1Projective_equal();
+        println!("G1.equalverify: {} bytes", equal.len());
+
+        let mut prng = ChaCha20Rng::seed_from_u64(0);
+
+        for _ in 0..1 {
+            let scalar = Fr::rand(&mut prng);
+
+            let p = ark_bn254::G1Projective::rand(&mut prng).mul(scalar);
+            let q = p.into_affine();
+
+            let script = script! {
+                { Fq::push_u32_le(&BigUint::from(p.x).to_u32_digits()) }
+                { Fq::push_u32_le(&BigUint::from(p.y).to_u32_digits()) }
+                { Fq::push_u32_le(&BigUint::from(p.z).to_u32_digits()) }
+                { Fq::push_u32_le(&BigUint::from(q.x).to_u32_digits()) }
+                { Fq::push_u32_le(&BigUint::from(q.y).to_u32_digits()) }
+                { Fq::push_one() }
+                { equal.clone() }
+            };
+            println!("curves::test_equalverify = {} bytes", script.len());
+            run(script);
+        }
     }
 }
