@@ -92,9 +92,73 @@ pub fn G1Projective_equal() -> Script {
     }
 }
 
+// inputs are serialized form of (Ri, Pi, i, s, Ri-1)
+// evaulates (Ri != Ri-1 + s[i] * Pi)
+pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
+    script!{
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 1 + 36 + 36 * 2) }
+
+        // LOGIC STARTS HERE
+
+        // Ri to its G1Affine form, then to its G1Projective and push it to alt stack
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
+        { G1Projective::toaltstack() }
+
+        // Pi to its G1Affine form, then to its G1Projective and push it to alt stack
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
+        { G1Projective::toaltstack() }
+
+        // now the top of the stack are i and then s and then Ri-1
+        OP_TOALTSTACK
+        { U254::from_bytes() }
+        { Fr::convert_to_le_bits() }
+        OP_FROMALTSTACK
+        OP_ROLL // fetch the ith bit
+        // drop the rest of the 253 bits
+        OP_TOALTSTACK
+        for _ in 0..253 {
+            OP_DROP
+        }
+
+        // now the top of the alt stack is s[i]
+        // and top of the stack is Ri-1 in bytes
+
+        // convert Ri-1 into its projective from
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
+
+        OP_FROMALTSTACK // bring s[i] to the stack
+        OP_IF
+            { G1Projective::fromaltstack() }
+            { G1Projective::add() }
+        OP_ELSE
+            { G1Projective::fromaltstack() }
+            { G1Projective::drop() }
+        OP_ENDIF
+
+        // bring Ri from its affine from, from the altstack
+        { G1Projective::fromaltstack() }
+
+        // compare
+        { G1Projective_equal() }
+        OP_NOT
+    }
+}
+
 // inputs are serialized form of (Pi+1, Pi)
 // evaulates (Pi+1 != 2 * Pi)
-pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
+pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
     script!{
         { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2) }
 
@@ -124,100 +188,6 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
         // compare both Pi+1 and Pi * 2
         { G1Projective_equal() }
         OP_NOT
-    }
-}
-
-// inputs are serialized form of (Pi+1, Pi, Ri, i, s, Ri-1)
-// evaulates false || (Pi+1 != 2 * Pi) || (Ri != Ri-1 + s[i] * Pi)
-// 2 sets of parameters for evaulating e*P and s*G
-pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
-    script!{
-        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2 + 1 + 36 + 36 * 2) }
-
-        // LOGIC STARTS HERE
-
-        OP_0 OP_TOALTSTACK
-
-        // Pi+1 to its G1Affine form, and push it to alt stack
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-
-        // Pi to its G1Affine form
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-
-        // Pi to its G1Projective
-        { G1Affine::into_projective() }
-
-        // clone Pi
-        { G1Projective::copy(0) }
-
-        // now we have 2 Pi on the top of the stack, in its G1Projective form 
-
-        // implement inquality 1
-        { G1Projective::double() }
-        { G1Projective::into_affine() }
-        { Fq::fromaltstack() }
-        { Fq::fromaltstack() }
-        { G1Affine_equal() }
-        OP_NOT OP_FROMALTSTACK OP_BOOLOR
-
-        // now the stack contents are 
-        // Pi Projective, Ri, i, s, Ri-1
-        { G1Projective::toaltstack() }
-        // convert Ri to G1Affine
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        // bring Pi back to the stack
-        { G1Projective::fromaltstack() }
-        // bring Ri as G1 Affine to the to top of the stack, and Pi projective right behind it
-        { Fq::roll(4) }
-        { Fq::roll(4) }
-        // push both of them to the altstack
-        { Fq::toaltstack() }{ Fq::toaltstack() }
-        { G1Projective::toaltstack() }
-
-        // now the top of the stack are i and then s starting with 0
-        OP_TOALTSTACK
-        { U254::from_bytes() }
-        { Fr::convert_to_le_bits() }
-        OP_FROMALTSTACK
-        OP_ROLL // fetch the ith bit
-        // drop the rest of the 253 bits
-        OP_TOALTSTACK
-        for _ in 0..253 {
-            OP_DROP
-        }
-        // bring the ith bit of s back from the altstack
-        OP_FROMALTSTACK
-
-        // if this bit is 1, make stack top to be Ri-1 + Pi
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        OP_IF
-            { G1Affine::into_projective() }
-            { G1Projective::fromaltstack() }
-            { G1Projective::add() }
-            { G1Projective::into_affine() }
-        OP_ELSE
-            { G1Projective::fromaltstack() }
-            { G1Projective::drop() }
-        OP_ENDIF
-
-        // bring Ri from its affine from, from the altstack
-        { Fq::fromaltstack() } { Fq::fromaltstack() }
-
-        // inequality 2
-        { G1Affine_equal() }
-        OP_NOT OP_FROMALTSTACK OP_BOOLOR
     }
 }
 
