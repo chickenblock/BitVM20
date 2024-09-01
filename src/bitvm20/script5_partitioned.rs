@@ -1,4 +1,4 @@
-use bitcoin::opcodes::all::{OP_BOOLOR, OP_ENDIF, OP_FROMALTSTACK, OP_TOALTSTACK};
+use bitcoin::opcodes::all::{OP_BOOLAND, OP_BOOLOR, OP_ENDIF, OP_FROMALTSTACK, OP_TOALTSTACK};
 
 use crate::treepp::{script, Script};
 
@@ -53,6 +53,42 @@ fn G1Affine_equal() -> Script {
         { Fq::equal(1, 0) }
         OP_FROMALTSTACK OP_ADD
         {2} OP_EQUAL
+    }
+}
+
+pub fn G1Projective_equal() -> Script {
+    script! {
+        OP_1 OP_TOALTSTACK // initialize result stack
+
+        { Fq::copy(3) }
+        { Fq::square() }
+        { Fq::roll(4) }
+        { Fq::copy(1) }
+        { Fq::mul() }
+
+        { Fq::copy(2) }
+        { Fq::square() }
+        { Fq::roll(3) }
+        { Fq::copy(1) }
+        { Fq::mul() }
+
+        { Fq::roll(7) }
+        { Fq::roll(2) }
+        { Fq::mul() }
+        { Fq::roll(5) }
+        { Fq::roll(4) }
+        { Fq::mul() }
+        { Fq::equal(1, 0) }
+        OP_FROMALTSTACK OP_BOOLAND OP_TOALTSTACK // and the output of equal with the result
+
+        { Fq::roll(3) }
+        { Fq::roll(1) }
+        { Fq::mul() }
+        { Fq::roll(2) }
+        { Fq::roll(2) }
+        { Fq::mul() }
+        { Fq::equal(1, 0) }
+        OP_FROMALTSTACK OP_BOOLAND // and the output of equal with the result, and leave result on the stack
     }
 }
 
@@ -215,6 +251,13 @@ mod test {
     #[test]
     fn test_bitvm20_script5_partitioned() {
         #[rustfmt::skip]
+
+        println!("stats :");
+        println!("G1Projective::double : {}", G1Projective::double().len());
+        println!("G1Projective::add : {}", G1Projective::add().len());
+        println!("G1Projective::into_affine : {}", G1Projective::into_affine().len());
+        println!("G1Projective::equalverify : {}", G1Projective::equalverify().len());
+        println!("G1Projective_equal : {}", G1Projective_equal().len());
 
         let winternitz_public_key = generate_public_key(winternitz_private_key);
 
