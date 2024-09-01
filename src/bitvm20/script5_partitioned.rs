@@ -92,10 +92,45 @@ pub fn G1Projective_equal() -> Script {
     }
 }
 
+// inputs are serialized form of (Pi+1, Pi)
+// evaulates (Pi+1 != 2 * Pi)
+pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
+    script!{
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2) }
+
+        // LOGIC STARTS HERE
+
+        // Pi+1 to its G1Affine form, then into its G1Projective form and push it to alt stack
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
+        { G1Projective::toaltstack() }
+
+        // Pi to its G1Affine form, then into its G1Projective form
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
+
+        // double Pi
+        { G1Projective::double() }
+
+        // bring Pi+1 to the stack
+        { G1Projective::fromaltstack() }
+
+        // compare both Pi+1 and Pi * 2
+        { G1Projective_equal() }
+        OP_NOT
+    }
+}
+
 // inputs are serialized form of (Pi+1, Pi, Ri, i, s, Ri-1)
 // evaulates false || (Pi+1 != 2 * Pi) || (Ri != Ri-1 + s[i] * Pi)
 // 2 sets of parameters for evaulating e*P and s*G
-pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
+pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
     script!{
         { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2 + 1 + 36 + 36 * 2) }
 
@@ -188,7 +223,7 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
 
 // inputs are serialized form of (R, s*G, e*P)
 // evauates R - s * G != e * P
-pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
+pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
     script!{
         { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2) }
 
@@ -215,18 +250,18 @@ pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
         { G1Projective::add() }
         { G1Projective::toaltstack() }
 
-        // convert e*P into its G1Affine form
+        // convert e*P into its G1Affine form, and then into G1Projective
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
         { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
 
-        // now move the addition result to the stack and convert it to affine
+        // now move the addition result to the stack and compare it
         { G1Projective::fromaltstack() }
-        { G1Projective::into_affine() }
 
         // compare them
-        { G1Affine_equal() }
+        { G1Projective_equal() }
         OP_NOT
     }
 }
@@ -292,12 +327,16 @@ mod test {
         scripts.push(script! {
             { construct_script5_3(&winternitz_public_key) }
         });
+        scripts.push(script! {
+            { construct_script5_4(&winternitz_public_key) }
+        });
 
         println!(
-            "script 5 size:\n \t{:?}, {:?}, {:?} bytes",
+            "script 5 size:\n \t{:?}, {:?}, {:?}, {:?} bytes",
             scripts[0].len(),
             scripts[1].len(),
-            scripts[2].len()
+            scripts[2].len(),
+            scripts[3].len()
         );
 
         /*run(script! {
