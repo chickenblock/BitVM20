@@ -10,6 +10,14 @@ pub struct simple_script_generator {
     pub script_generator_function : fn(&PublicKey) -> Script,
 }
 
+impl simple_script_generator {
+    pub fn new(script_generator_function : fn(&PublicKey) -> Script) -> simple_script_generator {
+        return simple_script_generator {
+            script_generator_function: script_generator_function,
+        };
+    }
+}
+
 impl script_generator for simple_script_generator {
     fn generate_script(&self, winternitz_public_key: &PublicKey) -> Script {
         return (self.script_generator_function)(winternitz_public_key);

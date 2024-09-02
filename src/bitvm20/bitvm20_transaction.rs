@@ -5,7 +5,6 @@ use ark_ec::{AffineRepr, PrimeGroup};
 use std::ops::{Mul,Add,Neg};
 use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
-use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use chrono::Utc;
@@ -14,6 +13,7 @@ use num_traits::Zero;
 use crate::treepp::{script, Script};
 use crate::bitvm20::script5_partitioned::{construct_script5_1, construct_script5_2, construct_script5_3, construct_script5_4};
 use crate::signatures::winternitz::{generate_public_key,PublicKey};
+use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context, simple_script_generator};
 
 #[derive(PartialEq, Debug)]
 pub struct bitvm20_transaction {
@@ -167,9 +167,9 @@ impl bitvm20_transaction {
             input.extend_from_slice(&self.serialize_without_signature());
             input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
             if(winternitz_private_keys.len() > 0) {
-                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_1(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_1))));
             } else {
-                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_1(&winternitz_public_keys[result.len()])));
+                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_1))));
             }
         }
 
@@ -199,9 +199,9 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.y), true));
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.x), true));
                     if(winternitz_private_keys.len() > 0) {
-                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_2(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
                     } else {
-                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_2(&winternitz_public_keys[result.len()])));
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_2))));
                     }
                 }
 
@@ -215,9 +215,9 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.y), true));
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.x), true));
                     if(winternitz_private_keys.len() > 0) {
-                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_3(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
                     } else {
-                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_3(&winternitz_public_keys[result.len()])));
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_3))));
                     }
                 }
 
@@ -252,9 +252,9 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.y), true));
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.x), true));
                     if(winternitz_private_keys.len() > 0) {
-                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_2(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
                     } else {
-                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_2(&winternitz_public_keys[result.len()])));
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_2))));
                     }
                 }
 
@@ -268,9 +268,9 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.y), true));
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.x), true));
                     if(winternitz_private_keys.len() > 0) {
-                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_3(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
                     } else {
-                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_3(&winternitz_public_keys[result.len()])));
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_3))));
                     }
                 }
 
@@ -292,9 +292,9 @@ impl bitvm20_transaction {
             input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.y), true));
             input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.x), true));
             if(winternitz_private_keys.len() > 0) {
-                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_4(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_4))));
             } else {
-                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_4(&winternitz_public_keys[result.len()])));
+                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_4))));
             }
         }
 
