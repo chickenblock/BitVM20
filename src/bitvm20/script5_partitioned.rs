@@ -79,28 +79,33 @@ pub fn G1Projective_equal() -> Script {
     }
 }
 
+const input_point_size_on_stack : usize = 36 * 3;
+fn convert_to_G1Projective_from_top_bytes() -> Script {
+    return script! {
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::toaltstack() }
+        { U254::from_bytes() }
+        { Fq::fromaltstack() }
+        { Fq::fromaltstack() }
+    };
+}
+
 // inputs are serialized form of (Ri, Pi, i, s, Ri-1)
 // evaulates (Ri != Ri-1 + s[i] * Pi)
 pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 1 + 36 + 36 * 2) }
+        { verify_input_data(&winternitz_public_key, input_point_size_on_stack + input_point_size_on_stack + 1 + 36 + input_point_size_on_stack) }
 
         // LOGIC STARTS HERE
 
         // Ri to its G1Projective form and push it to alt stack
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
         { G1Projective::toaltstack() }
 
         // Pi to its G1Projective form and push it to alt stack
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
         { G1Projective::toaltstack() }
 
         // now the top of the stack are i and then s and then Ri-1
@@ -119,11 +124,7 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
         // and top of the stack is Ri-1 in bytes
 
         // convert Ri-1 into its projective from
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
 
         OP_FROMALTSTACK // bring s[i] to the stack
         OP_IF
@@ -147,24 +148,16 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
 // evaulates (Pi+1 != 2 * Pi)
 pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2) }
+        { verify_input_data(&winternitz_public_key, input_point_size_on_stack + input_point_size_on_stack) }
 
         // LOGIC STARTS HERE
 
         // Pi+1 into its G1Projective form and push it to alt stack
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
         { G1Projective::toaltstack() }
 
         // Pi into its G1Projective form
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
 
         // double Pi
         { G1Projective::double() }
@@ -182,23 +175,16 @@ pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
 // evauates R - s * G != e * P
 pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2) }
+        { verify_input_data(&winternitz_public_key, input_point_size_on_stack + input_point_size_on_stack + input_point_size_on_stack) }
 
         // LOGIC STARTS HERE
 
         // convert R into into its G1Projective from, and push it to altstack
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
+        { G1Projective::toaltstack() }
 
         // convert s * G into its G1Projective form, and then negate it
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
         { G1Projective::neg() }
 
         // add the R + (-s*G)
@@ -207,11 +193,7 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
         { G1Projective::toaltstack() }
 
         // convert e*P into its G1Projective form
-        { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
-        { G1Affine::into_projective() }
+        { convert_to_G1Projective_from_top_bytes() }
 
         // now move the addition result to the stack and compare it
         { G1Projective::fromaltstack() }

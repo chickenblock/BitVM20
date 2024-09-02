@@ -3,7 +3,7 @@ use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::{BigInt, BigInteger, PrimeField, UniformRand};
 use ark_ec::{AffineRepr, PrimeGroup};
 use std::ops::{Mul,Add,Neg};
-use crate::bitvm20::serde_for_coordinate::{serialize_G1Projective, serialize_G1Affine, serialize_bn254_element,deserialize_bn254_element};
+use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
@@ -187,11 +187,11 @@ impl bitvm20_transaction {
                 // script for eP_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_G1Projective(&eP_next));
-                    input.extend_from_slice(&serialize_G1Projective(&power_i));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&eP_next));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     input.push(i as u8);
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
-                    input.extend_from_slice(&serialize_G1Projective(&eP));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&eP));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
                     } else {
@@ -202,8 +202,8 @@ impl bitvm20_transaction {
                 // script for power_i_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_G1Projective(&power_i_next));
-                    input.extend_from_slice(&serialize_G1Projective(&power_i));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i_next));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
                     } else {
@@ -230,11 +230,11 @@ impl bitvm20_transaction {
                 // script for Rv_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_G1Projective(&Rv_next));
-                    input.extend_from_slice(&serialize_G1Projective(&power_i));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&Rv_next));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     input.push(i as u8);
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(self.s), false));
-                    input.extend_from_slice(&serialize_G1Projective(&Rv));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&Rv));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
                     } else {
@@ -245,8 +245,8 @@ impl bitvm20_transaction {
                 // script for power_i_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_G1Projective(&power_i_next));
-                    input.extend_from_slice(&serialize_G1Projective(&power_i));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i_next));
+                    input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
                     } else {
@@ -262,9 +262,9 @@ impl bitvm20_transaction {
         // build script for R - Rv == eP
         {
             let mut input = vec![];
-            input.extend_from_slice(&serialize_G1Affine(&self.r));
-            input.extend_from_slice(&serialize_G1Projective(&Rv));
-            input.extend_from_slice(&serialize_G1Projective(&eP));
+            input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&G1Projective::from(self.r)));
+            input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&Rv));
+            input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&eP));
             if(winternitz_private_keys.len() > 0) {
                 result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_4))));
             } else {
@@ -274,6 +274,17 @@ impl bitvm20_transaction {
 
         return result;
     }
+}
+
+pub fn serialize_G1Projective_for_signature_verification(p : &G1Projective) -> [u8; 108] {
+    let mut result : [u8; 36*3] = [0; 36*3];
+    if p.is_zero() { // if it is a point on infinity, then everything is 0
+        return result;
+    }
+    result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.z), true));
+    result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.y), true));
+    result[72..108].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.x), true));
+    return result;
 }
 
 #[cfg(test)]
