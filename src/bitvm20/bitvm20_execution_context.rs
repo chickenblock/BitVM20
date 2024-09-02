@@ -1,5 +1,5 @@
 use crate::treepp::{script, Script};
-use crate::signatures::winternitz::{PublicKey,generate_public_key,sign_digits};
+use crate::signatures::winternitz::{PublicKey,generate_public_key,sign_digits,N};
 use crate::bitvm20::utils::data_to_signable_balke3_digits;
 
 pub struct bitvm20_execution_context
@@ -13,27 +13,28 @@ pub struct bitvm20_execution_context
 }
 
 impl bitvm20_execution_context {
-    pub fn new(winternitz_private_key: &str, input_parameters: &Vec<u8>, script: &Script) -> bitvm20_execution_context {
-        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(input_parameters);
+    // generate a new executuon context without any information of winternitz signatures
+    pub fn new(input_parameters: &Vec<u8>, script: &Script) -> bitvm20_execution_context {
         return bitvm20_execution_context {
-            winternitz_private_key: String::from(winternitz_private_key),
-            winternitz_public_key: generate_public_key(winternitz_private_key),
+            winternitz_private_key: String::from(""),
+            winternitz_public_key: [[0; 20]; N as usize],
 
             input_parameters: input_parameters.clone(),
-            winternitz_signatures: sign_digits(winternitz_private_key, signable_hash_digits),
+            winternitz_signatures: script!{},
             script: script.clone()
         };
     }
 
-    pub fn new2(winternitz_public_key: PublicKey, input_parameters: &Vec<u8>, winternitz_signatures: &Script, script: &Script) -> bitvm20_execution_context {
-        return bitvm20_execution_context {
-            winternitz_private_key: String::from(""),
-            winternitz_public_key: winternitz_public_key.clone(),
+    pub fn add_winternitz_private_key(&mut self, winternitz_private_key: &str) {
+        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&(self.input_parameters));
+        self.winternitz_private_key = String::from(winternitz_private_key);
+        self.winternitz_public_key = generate_public_key(winternitz_private_key);
+        self.winternitz_signatures = sign_digits(winternitz_private_key, signable_hash_digits);
+    }
 
-            input_parameters: input_parameters.clone(),
-            winternitz_signatures: winternitz_signatures.clone(),
-            script: script.clone()
-        };
+    pub fn add_winternitz_public_key(&mut self, winternitz_public_key: PublicKey, winternitz_signatures: &Script) {
+        self.winternitz_public_key = winternitz_public_key.clone();
+        self.winternitz_signatures = winternitz_signatures.clone();
     }
 
     pub fn get_executable(&self) -> Script {

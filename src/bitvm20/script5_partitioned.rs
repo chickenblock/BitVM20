@@ -43,19 +43,6 @@ pub fn construct_script5_1(winternitz_public_key: &PublicKey) -> Script {
     }
 }
 
-// compare if top 2 G1Affine elements of the stack are equal
-fn G1Affine_equal() -> Script {
-    script! {
-        OP_0 OP_TOALTSTACK
-        { Fq::roll(2) }
-        { Fq::equal(1, 0) }
-        OP_FROMALTSTACK OP_ADD OP_TOALTSTACK
-        { Fq::equal(1, 0) }
-        OP_FROMALTSTACK OP_ADD
-        {2} OP_EQUAL
-    }
-}
-
 pub fn G1Projective_equal() -> Script {
     script! {
         OP_1 OP_TOALTSTACK // initialize result stack
@@ -234,6 +221,12 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
         { G1Projective_equal() }
         OP_NOT
     }
+}
+
+use crate::bitvm20::bitvm20_execution_context;
+
+pub fn generate_execution_contexts_for_signature_verification() -> Vec<bitvm20_execution_context> {
+
 }
 
 #[cfg(test)]
