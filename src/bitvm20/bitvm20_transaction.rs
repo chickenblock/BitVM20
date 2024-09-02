@@ -1,24 +1,29 @@
 use num_bigint::BigUint;
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
-use ark_ff::{BigInt,PrimeField,UniformRand};
-use ark_ec::PrimeGroup;
+use ark_ff::{BigInt, BigInteger, PrimeField, UniformRand};
+use ark_ec::{AffineRepr, PrimeGroup};
 use std::ops::{Mul,Add,Neg};
 use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
+use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use chrono::Utc;
 
+use crate::treepp::{script, Script};
+use crate::bitvm20::script5_partitioned::{construct_script5_1, construct_script5_2, construct_script5_3, construct_script5_4};
+use crate::signatures::winternitz::{generate_public_key,PublicKey};
+
 #[derive(PartialEq, Debug)]
 pub struct bitvm20_transaction {
-    from_public_key: G1Affine,
-    to_public_key: G1Affine,
-    from_nonce: u64,
-    value: BigUint,
+    pub from_public_key: G1Affine,
+    pub to_public_key: G1Affine,
+    pub from_nonce: u64,
+    pub value: BigUint,
 
     // signature attributes
-    r: G1Affine,
-    s: Fr,
+    pub r: G1Affine,
+    pub s: Fr,
 }
 
 impl bitvm20_transaction {
@@ -141,6 +146,145 @@ impl bitvm20_transaction {
 
         // R - Rv == e * P
         return G1Projective::from(self.r).add(Rv.neg()) == self.from_public_key.mul(e);
+    }
+
+    pub fn generate_execution_contexts_for_signature_verification(&self, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> Vec<bitvm20_execution_context> {
+        let mut result = vec![];
+
+        // construct e = h(Rx || M) -> using script 5_1
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(&serialize_bn254_element(&BigUint::from(self.r.x), true));
+        hasher.update(&self.serialize_without_signature());
+        let data_hash = hasher.finalize();
+        let data_hash = data_hash.as_bytes();
+        let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+
+        // push a script for calculation of e
+        {
+            let mut input = vec![];
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(self.r.x), true));
+            input.extend_from_slice(&self.serialize_without_signature());
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
+            if(winternitz_private_keys.len() > 0) {
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_1(&generate_public_key(&winternitz_private_keys[result.len()]))));
+            } else {
+                result.push(bitvm20_execution_context::new2(winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_1(&winternitz_public_keys[result.len()])));
+            }
+        }
+
+        // construct eP = e * P
+        let mut eP = G1Projective::from(G1Affine::zero());
+        {
+            let mut power_i = G1Projective::from(self.from_public_key);
+            for i in 0..254 {
+                let mut eP_next = eP.clone();
+                if(e.into_bigint().get_bit(i) == true) {
+                    eP_next = eP_next.add(power_i);
+                }
+                let power_i_next = power_i.add(power_i);
+
+                // script for eP_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(eP_next).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(eP_next).x), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).x), true));
+                    input.push(i as u8);
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(eP).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(eP).x), true));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_2(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_2(&winternitz_public_keys[result.len()])));
+                    }
+                }
+
+                // script for power_i_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i_next).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i_next).x), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).x), true));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_3(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_3(&winternitz_public_keys[result.len()])));
+                    }
+                }
+
+                eP_next = eP;
+                power_i = power_i_next;
+            }
+        }
+
+        // construct Rv = s * G
+        let mut Rv = G1Projective::from(G1Affine::zero());
+        {
+            let mut power_i = G1Projective::generator();
+            for i in 0..254 {
+                let mut Rv_next = Rv.clone();
+                if(self.s.into_bigint().get_bit(i) == true) {
+                    Rv_next = Rv_next.add(power_i);
+                }
+                let power_i_next = power_i.add(power_i);
+
+                // script for Rv_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(Rv_next).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(Rv_next).x), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).x), true));
+                    input.push(i as u8);
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(self.s), false));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(Rv).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(Rv).x), true));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_2(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_2(&winternitz_public_keys[result.len()])));
+                    }
+                }
+
+                // script for power_i_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i_next).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i_next).x), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).y), true));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(power_i).x), true));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_3(&generate_public_key(&winternitz_private_keys[result.len()]))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_3(&winternitz_public_keys[result.len()])));
+                    }
+                }
+
+                Rv_next = Rv;
+                power_i = power_i_next;
+            }
+        }
+
+        // build script for R - Rv == eP
+        {
+            let mut input = vec![];
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(self.r).y), true));
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(self.r).x), true));
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(Rv).y), true));
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(Rv).x), true));
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(eP).y), true));
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Affine::from(eP).x), true));
+            if(winternitz_private_keys.len() > 0) {
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, &construct_script5_4(&generate_public_key(&winternitz_private_keys[result.len()]))));
+            } else {
+                result.push(bitvm20_execution_context::new2(winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], &construct_script5_4(&winternitz_public_keys[result.len()])));
+            }
+        }
+
+        return result;
     }
 }
 

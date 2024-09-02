@@ -223,12 +223,6 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
     }
 }
 
-use crate::bitvm20::bitvm20_execution_context;
-
-pub fn generate_execution_contexts_for_signature_verification() -> Vec<bitvm20_execution_context> {
-
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
