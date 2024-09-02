@@ -227,7 +227,7 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
 mod test {
     use super::*;
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,sign_digits};
+    use crate::signatures::winternitz::{generate_public_key,sign_digits, N};
     use crate::bitvm20::bitvm20_entry::bitvm20_entry;
     use crate::bitvm20::bitvm20_transaction::bitvm20_transaction;
     use num_bigint::{BigUint,RandomBits};
@@ -254,6 +254,14 @@ mod test {
 
         let winternitz_public_key = generate_public_key(winternitz_private_key);
 
+        println!(
+            "script 5 size:\n \t{:?}, {:?}, {:?}, {:?} bytes",
+            construct_script5_1(&winternitz_public_key).len(),
+            construct_script5_2(&winternitz_public_key).len(),
+            construct_script5_3(&winternitz_public_key).len(),
+            construct_script5_4(&winternitz_public_key).len()
+        );
+
         let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
 
         let from_private_key : Fr = Fr::rand(&mut prng);
@@ -264,47 +272,17 @@ mod test {
         tx.sign_transaction(&from_private_key);
         assert!(tx.verify_signature(), "rust offchain signature verification did not pass");
 
-        let mut data: Vec<u8> = vec![];
-        for d in tx.serialize() {
-            data.push(d);
+        // generate 1018 privet keys
+        let mut winternitz_private_keys = vec![];
+        for _ in 0..1018 {
+            winternitz_private_keys.push(String::from(winternitz_private_key));
         }
 
-        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&data);
+        let exec_contexts = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
 
-        println!("data : {:x?}", data);
-        println!("signable_hash_digits : {:x?}", signable_hash_digits);
-
-        let mut scripts : Vec<Script> = vec![];
-        scripts.push(script! {
-            { construct_script5_1(&winternitz_public_key) }
-        });
-        scripts.push(script! {
-            { construct_script5_2(&winternitz_public_key) }
-        });
-        scripts.push(script! {
-            { construct_script5_3(&winternitz_public_key) }
-        });
-        scripts.push(script! {
-            { construct_script5_4(&winternitz_public_key) }
-        });
-
-        println!(
-            "script 5 size:\n \t{:?}, {:?}, {:?}, {:?} bytes",
-            scripts[0].len(),
-            scripts[1].len(),
-            scripts[2].len(),
-            scripts[3].len()
-        );
-
-        /*run(script! {
-            for x in (&data).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script5(&winternitz_public_key) }
-
-            OP_0 OP_EQUAL // on correct execution this script must fail
-        });*/
+        for ec in exec_contexts {
+            run(ec.get_executable());
+        }
     }
 
     use ark_ec::CurveGroup;
