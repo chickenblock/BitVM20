@@ -83,7 +83,7 @@ pub fn G1Projective_equal() -> Script {
 // evaulates (Ri != Ri-1 + s[i] * Pi)
 pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 36 * 3 + 36 * 3 + 1 + 36 + 36 * 3) }
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 1 + 36 + 36 * 2) }
 
         // LOGIC STARTS HERE
 
@@ -147,7 +147,7 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
 // evaulates (Pi+1 != 2 * Pi)
 pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 36 * 3 + 36 * 3) }
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2) }
 
         // LOGIC STARTS HERE
 
@@ -182,7 +182,7 @@ pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
 // evauates R - s * G != e * P
 pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
     script!{
-        { verify_input_data(&winternitz_public_key, 36 * 3 + 36 * 3 + 36 * 3) }
+        { verify_input_data(&winternitz_public_key, 36 * 2 + 36 * 2 + 36 * 2) }
 
         // LOGIC STARTS HERE
 
