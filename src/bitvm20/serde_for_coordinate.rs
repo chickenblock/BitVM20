@@ -1,6 +1,23 @@
+use ark_ec::AffineRepr;
+use bitcoin::psbt::serialize;
 use num_bigint::BigUint;
 use num_traits::Num;
 use std::ops::{Add, Mul, Shl, Rem};
+use ark_bn254::{G1Affine, G1Projective};
+
+pub fn serialize_G1Projective(p : &G1Projective) -> [u8; 72] {
+    return serialize_G1Affine(&G1Affine::from(*p));
+}
+
+pub fn serialize_G1Affine(p : &G1Affine) -> [u8; 72] {
+    let mut result : [u8; 72] = [0; 72];
+    if p.is_zero() { // if it is a point on infinity, then everythiung is 0
+        return result;
+    }
+    result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.y), true));
+    result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.x), true));
+    return result;
+}
 
 pub fn serialize_bn254_element(_s : &BigUint, is_Fq : bool) -> [u8; 36] {
     let mut N : BigUint = BigUint::ZERO;

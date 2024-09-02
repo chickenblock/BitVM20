@@ -91,9 +91,6 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
         { G1Projective::toaltstack() }
@@ -102,9 +99,6 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
         { G1Projective::toaltstack() }
@@ -128,9 +122,6 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
 
@@ -164,9 +155,6 @@ pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
         { G1Projective::toaltstack() }
@@ -175,9 +163,6 @@ pub fn construct_script5_3(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
 
@@ -205,9 +190,6 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
 
@@ -215,9 +197,6 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
         { G1Projective::neg() }
@@ -231,9 +210,6 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
-        { Fq::fromaltstack() }
         { Fq::fromaltstack() }
         { G1Affine::into_projective() }
 

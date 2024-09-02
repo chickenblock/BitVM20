@@ -3,7 +3,7 @@ use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::{BigInt, BigInteger, PrimeField, UniformRand};
 use ark_ec::{AffineRepr, PrimeGroup};
 use std::ops::{Mul,Add,Neg};
-use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
+use crate::bitvm20::serde_for_coordinate::{serialize_G1Projective, serialize_G1Affine, serialize_bn254_element,deserialize_bn254_element};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
@@ -187,17 +187,11 @@ impl bitvm20_transaction {
                 // script for eP_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP_next.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP_next.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP_next.x), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.x), true));
+                    input.extend_from_slice(&serialize_G1Projective(&eP_next));
+                    input.extend_from_slice(&serialize_G1Projective(&power_i));
                     input.push(i as u8);
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.x), true));
+                    input.extend_from_slice(&serialize_G1Projective(&eP));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
                     } else {
@@ -208,12 +202,8 @@ impl bitvm20_transaction {
                 // script for power_i_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i_next.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i_next.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i_next.x), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.x), true));
+                    input.extend_from_slice(&serialize_G1Projective(&power_i_next));
+                    input.extend_from_slice(&serialize_G1Projective(&power_i));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
                     } else {
@@ -240,17 +230,11 @@ impl bitvm20_transaction {
                 // script for Rv_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv_next.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv_next.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv_next.x), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.x), true));
+                    input.extend_from_slice(&serialize_G1Projective(&Rv_next));
+                    input.extend_from_slice(&serialize_G1Projective(&power_i));
                     input.push(i as u8);
                     input.extend_from_slice(&serialize_bn254_element(&BigUint::from(self.s), false));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.x), true));
+                    input.extend_from_slice(&serialize_G1Projective(&Rv));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
                     } else {
@@ -261,12 +245,8 @@ impl bitvm20_transaction {
                 // script for power_i_next
                 {
                     let mut input = vec![];
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i_next.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i_next.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i_next.x), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.z), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.y), true));
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(power_i.x), true));
+                    input.extend_from_slice(&serialize_G1Projective(&power_i_next));
+                    input.extend_from_slice(&serialize_G1Projective(&power_i));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
                     } else {
@@ -282,15 +262,9 @@ impl bitvm20_transaction {
         // build script for R - Rv == eP
         {
             let mut input = vec![];
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Projective::from(self.r).z), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Projective::from(self.r).y), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(G1Projective::from(self.r).x), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.z), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.y), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(Rv.x), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.z), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.y), true));
-            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(eP.x), true));
+            input.extend_from_slice(&serialize_G1Affine(&self.r));
+            input.extend_from_slice(&serialize_G1Projective(&Rv));
+            input.extend_from_slice(&serialize_G1Projective(&eP));
             if(winternitz_private_keys.len() > 0) {
                 result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_4))));
             } else {
