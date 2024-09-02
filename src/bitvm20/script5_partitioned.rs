@@ -309,7 +309,7 @@ mod test {
 
         for (i, ec) in exec_contexts.iter().enumerate() {
             let s = ec.get_executable();
-            println!("script no. {} of size {}\n", i, s.len());
+            println!("script no. {} of size {}\n", i, ec.get_script().len());
             run(script!{
                 { s }
                 OP_NOT
