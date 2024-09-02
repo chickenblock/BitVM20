@@ -278,10 +278,17 @@ mod test {
             winternitz_private_keys.push(String::from(winternitz_private_key));
         }
 
+        println!("generated winternitz private keys");
+
         let exec_contexts = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
 
+        println!("generated execution contexts");
+
         for ec in exec_contexts {
-            run(ec.get_executable());
+            run(script!{
+                { ec.get_executable() }
+                OP_NOT
+            });
         }
     }
 
