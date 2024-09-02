@@ -25,7 +25,7 @@ impl bitvm20_execution_context {
         };
     }
 
-    pub fn new2(winternitz_public_key: PublicKey, input_parameters: &Vec<u8>, winternitz_signatures: &Script, script: &Script) -> bitvm20_execution_context {
+    pub fn new2(winternitz_public_key: &PublicKey, input_parameters: &Vec<u8>, winternitz_signatures: &Script, script: &Script) -> bitvm20_execution_context {
         return bitvm20_execution_context {
             winternitz_private_key: String::from(""),
             winternitz_public_key: winternitz_public_key.clone(),
