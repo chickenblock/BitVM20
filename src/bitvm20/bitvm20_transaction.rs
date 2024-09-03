@@ -149,7 +149,7 @@ impl bitvm20_transaction {
         return G1Projective::from(self.r).add(Rv.neg()) == self.from_public_key.mul(e);
     }
 
-    pub fn generate_execution_contexts_for_signature_verification(&self, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> Vec<bitvm20_execution_context> {
+    pub fn generate_execution_contexts_for_signature_verification(&self, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> (bool, Vec<bitvm20_execution_context>) {
         let mut result = vec![];
 
         // construct e = h(Rx || M) -> using script 5_1
@@ -180,7 +180,7 @@ impl bitvm20_transaction {
             for i in 0..254 {
                 let mut eP_next = eP.clone();
                 if(e.into_bigint().get_bit(i) == true) {
-                    eP_next = eP_next.add(power_i);
+                    eP_next = eP.add(power_i);
                 }
                 let power_i_next = power_i.add(power_i);
 
@@ -211,10 +211,11 @@ impl bitvm20_transaction {
                     }
                 }
 
-                eP_next = eP;
+                eP = eP_next;
                 power_i = power_i_next;
             }
         }
+        assert!((eP == self.from_public_key.mul(e)), "wrong eP");
 
         // construct Rv = s * G
         let mut Rv = G1Projective::zero();
@@ -223,7 +224,7 @@ impl bitvm20_transaction {
             for i in 0..254 {
                 let mut Rv_next = Rv.clone();
                 if(self.s.into_bigint().get_bit(i) == true) {
-                    Rv_next = Rv_next.add(power_i);
+                    Rv_next = Rv.add(power_i);
                 }
                 let power_i_next = power_i.add(power_i);
 
@@ -254,10 +255,11 @@ impl bitvm20_transaction {
                     }
                 }
 
-                Rv_next = Rv;
+                Rv = Rv_next;
                 power_i = power_i_next;
             }
         }
+        assert!((Rv == G1Projective::generator().mul(self.s)), "wrong Rv");
 
         // build script for R - Rv == eP
         {
@@ -272,7 +274,7 @@ impl bitvm20_transaction {
             }
         }
 
-        return result;
+        return ((G1Projective::from(self.r).add(Rv.neg()) == eP) , result);
     }
 }
 
