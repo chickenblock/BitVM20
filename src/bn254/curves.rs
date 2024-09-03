@@ -622,12 +622,12 @@ impl G1Affine {
             OP_FROMALTSTACK
             OP_FROMALTSTACK
             OP_IF
-                OP_IF
+                OP_IF                         //if x and y both are zero, push z=0 into resulting projective point
                     {Fq::fromaltstack()}
                     {Fq::fromaltstack()}   
                     { Fq::push_zero() }
                 OP_ENDIF
-            OP_ELSE
+            OP_ELSE                            //else, push z=1 into resulting projective point
                 {Fq::fromaltstack()}
                 {Fq::fromaltstack()}
                 {Fq::push_one()}
