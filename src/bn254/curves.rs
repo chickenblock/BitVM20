@@ -604,7 +604,37 @@ impl G1Affine {
     }
     // Input Stack: [x,y]
     // Output Stack: [x,y,z] (z=1)
-    pub fn into_projective() -> Script { script!({ Fq::push_one() }) }
+    pub fn into_projective() -> Script { 
+        
+        script! {
+
+            // Copy input x and y to altstack
+            { Fq::copy(0) }
+            { Fq::toaltstack() }
+            { Fq::copy(1) }
+            { Fq::toaltstack() }
+
+            { Fq::is_zero_keep_element(0) }   //check if x==0
+            OP_TOALTSTACK
+            { Fq::is_zero_keep_element(1) }   //check if y==0
+            OP_TOALTSTACK
+
+            OP_FROMALTSTACK
+            OP_FROMALTSTACK
+            OP_IF
+                OP_IF
+                    {Fq::fromaltstack()}
+                    {Fq::fromaltstack()}   
+                    { Fq::push_zero() }
+                OP_ENDIF
+            OP_ELSE
+                {Fq::fromaltstack()}
+                {Fq::fromaltstack()}
+                {Fq::push_one()}
+            OP_ENDIF
+            
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1224,5 +1254,29 @@ mod test {
             let exec_result = execute_script(script);
             assert!(exec_result.success);
         }
+    }
+
+    #[test]
+    fn test_affine_into_projective_for_identity() {
+            let q = G1Affine::identity();
+
+            let start = start_timer!(|| "collect_script");
+
+            let script = script! {
+                { g1_affine_push(q) }
+                { G1Affine::into_projective() }
+                { G1Projective::is_zero_keep_element(0) }
+                OP_TRUE
+            };
+            end_timer!(start);
+
+            println!(
+                "curves::test_affine_into_projective = {} bytes",
+                script.len()
+            );
+            let start = start_timer!(|| "execute_script");
+            let exec_result = execute_script(script);
+            end_timer!(start);
+            assert!(exec_result.success);
     }
 }
