@@ -619,9 +619,13 @@ impl G1Affine {
             { Fq::equal(1,0) }
             OP_FROMALTSTACK OP_BOOLAND
 
-            OP_IF                      //if both x and y are zero
+            OP_IF                      //if both x and y are zero, projective identity (0,1,0)
+                { Fq::drop() }
+                { Fq::drop() }
                 { Fq::push_zero() }
-            OP_ELSE                     //else, non identity projective point
+                { Fq::push_one() }
+                { Fq::push_zero() }
+            OP_ELSE                     //else, non identity projective point (x,y,1)
                 { Fq::push_one() }
             OP_ENDIF
             
