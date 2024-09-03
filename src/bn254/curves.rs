@@ -1,4 +1,4 @@
-use bitcoin::opcodes::all::{OP_ENDIF, OP_FROMALTSTACK, OP_TOALTSTACK};
+use bitcoin::opcodes::all::{OP_BOOLAND, OP_ENDIF, OP_FROMALTSTACK, OP_TOALTSTACK};
 
 use crate::bigint::U254;
 use crate::bn254::fp254impl::Fp254Impl;
@@ -608,29 +608,21 @@ impl G1Affine {
         
         script! {
 
-            // Copy input x and y to altstack
-            { Fq::copy(0) }
-            { Fq::toaltstack() }
-            { Fq::copy(1) }
-            { Fq::toaltstack() }
+            OP_1 OP_TOALTSTACK
+            { Fq::copy(0) }            //checking y=0
+            { Fq::push_zero() }
+            { Fq::equal(1,0) }
+            
+            OP_FROMALTSTACK OP_BOOLAND OP_TOALTSTACK
+            { Fq::copy(1) }            //checking x=0
+            { Fq::push_zero() }
+            { Fq::equal(1,0) }
+            OP_FROMALTSTACK OP_BOOLAND
 
-            { Fq::is_zero_keep_element(0) }   //check if x==0
-            OP_TOALTSTACK
-            { Fq::is_zero_keep_element(1) }   //check if y==0
-            OP_TOALTSTACK
-
-            OP_FROMALTSTACK
-            OP_FROMALTSTACK
-            OP_IF
-                OP_IF                         //if x and y both are zero, push z=0 into resulting projective point
-                    {Fq::fromaltstack()}
-                    {Fq::fromaltstack()}   
-                    { Fq::push_zero() }
-                OP_ENDIF
-            OP_ELSE                            //else, push z=1 into resulting projective point
-                {Fq::fromaltstack()}
-                {Fq::fromaltstack()}
-                {Fq::push_one()}
+            OP_IF                      //if both x and y are zero
+                { Fq::push_zero() }
+            OP_ELSE                     //else, non identity projective point
+                { Fq::push_one() }
             OP_ENDIF
             
         }
@@ -1258,14 +1250,14 @@ mod test {
 
     #[test]
     fn test_affine_into_projective_for_identity() {
-            let q = G1Affine::identity();
-
+            let q = ark_bn254::G1Affine::identity();
+            let is_zero = G1Projective::is_zero_keep_element(0);
             let start = start_timer!(|| "collect_script");
 
             let script = script! {
-                { g1_affine_push(q) }
+                { g1_affine_push(q) }                        //need to resolve error here
                 { G1Affine::into_projective() }
-                { G1Projective::is_zero_keep_element(0) }
+                { is_zero.clone() }
                 OP_TRUE
             };
             end_timer!(start);
