@@ -67,3 +67,7 @@ ark-crypto-primitives = { git = "https://github.com/Antalpha-Labs/crypto-primiti
 ark-relations = { git = "https://github.com/Antalpha-Labs/snark/" }
 ark-snark = { git = "https://github.com/Antalpha-Labs/snark/" }
 ark-groth16 = { git = "https://github.com/Antalpha-Labs/groth16" }
+
+[[bin]]
+name = "main"
+path = "../bin/main.rs"
