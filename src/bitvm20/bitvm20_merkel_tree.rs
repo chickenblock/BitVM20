@@ -1,13 +1,17 @@
 use std::collections::HashMap;
 use std::ops::{Add, Shl, Sub};
 
+use crate::treepp::{Script};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
+use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context,simple_script_generator};
 use crate::bitvm20::bitvm20_transaction::{bitvm20_transaction};
+use crate::signatures::winternitz::PublicKey;
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::Zero;
 use num_bigint::BigUint;
-use crate::bitvm20::bitvm20_execution_context::bitvm20_execution_context;
 use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
+
+use super::script4::construct_script4;
 
 pub const levels : usize = 5; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);
@@ -162,7 +166,6 @@ impl bitvm20_merkel_tree {
         }
     }
 
-    // TODO
     pub fn primary_validate_transaction(&self, tx : &bitvm20_transaction) -> bool {
         let from_entry = match self.get_entry_by_public_key(&tx.from_public_key) {
             None => { return false; },
@@ -197,9 +200,31 @@ impl bitvm20_merkel_tree {
         return true;
     }
 
-    // TODO
-    pub fn generate_scripts_for_primary_validation_of_transaction(from : &bitvm20_entry, to : &bitvm20_entry, value: &BigUint) -> (bool, Vec<bitvm20_execution_context>) {
-        return (false, vec![]);
+    pub fn generate_scripts_for_primary_validation_of_transaction(&self, tx : &bitvm20_transaction, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> (bool, Vec<bitvm20_execution_context>) {
+        let from_entry = match self.get_entry_by_public_key(&tx.from_public_key) {
+            None => { return (false, vec![]); },
+            Some(from_entry) => from_entry
+        };
+
+        let to_entry = match self.get_entry_by_public_key(&tx.to_public_key) {
+            None => { return (false, vec![]); },
+            Some(to_entry) => to_entry
+        };
+
+        let mut result = vec![];
+
+        let mut input : Vec<u8> = vec![];
+        input.extend_from_slice(&serialize_256bit_biguint(&tx.value));
+        input.extend_from_slice(&serialize_256bit_biguint(&to_entry.balance));
+        input.extend_from_slice(&serialize_256bit_biguint(&from_entry.balance));
+        input.extend_from_slice(&serialize_u64(from_entry.nonce));
+        if(winternitz_private_keys.len() > 0) {
+            result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script4))));
+        } else {
+            result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script4))));
+        }
+
+        return (true, result);
     }
 }
 
