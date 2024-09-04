@@ -243,7 +243,7 @@ mod test {
             construct_script5_4(&winternitz_public_key).len()
         );
 
-        let mut prng = ChaCha20Rng::seed_from_u64(0/*Utc::now().timestamp() as u64*/);
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
 
         let from_private_key : Fr = Fr::rand(&mut prng);
         let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0x0123, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
@@ -272,6 +272,7 @@ mod test {
         for (i, ec) in exec_contexts.iter().enumerate() {
             let s = ec.get_executable();
             println!("script no. {} of size {}\n", i, ec.get_script().len());
+            //println!("input : {:x?}\n", ec.input_parameters);
             run(script!{
                 { s }
                 OP_NOT

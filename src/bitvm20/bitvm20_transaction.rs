@@ -14,6 +14,7 @@ use crate::treepp::{script, Script};
 use crate::bitvm20::script5_partitioned::{construct_script5_1, construct_script5_2, construct_script5_3, construct_script5_4};
 use crate::signatures::winternitz::{generate_public_key,PublicKey};
 use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context, simple_script_generator};
+use crate::bitvm20::serde_for_coordinate::{serialize_254bit_element,deserialize_254bit_element};
 
 #[derive(PartialEq, Debug)]
 pub struct bitvm20_transaction {
@@ -111,7 +112,7 @@ impl bitvm20_transaction {
 
     pub fn sign_transaction(&mut self, private_key : &Fr) {
         // k = random scalar
-        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64*);
         let k : Fr = Fr::rand(&mut prng);
 
         // R = kG
@@ -190,7 +191,7 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&eP_next));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     input.push(i as u8);
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
+                    input.extend_from_slice(&serialize_254bit_element(&BigUint::from(e)));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&eP));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
@@ -234,7 +235,7 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&Rv_next));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     input.push(i as u8);
-                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(self.s), false));
+                    input.extend_from_slice(&serialize_254bit_element(&BigUint::from(self.s)));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&Rv));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));

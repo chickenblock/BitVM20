@@ -26,12 +26,12 @@ impl script_generator for simple_script_generator {
 
 pub struct bitvm20_execution_context
 {
-    winternitz_private_key : String, // it is possible to not have this
-    winternitz_public_key : PublicKey,
+    pub winternitz_private_key : String, // it is possible to not have this
+    pub winternitz_public_key : PublicKey,
 
-    input_parameters : Vec<u8>,
-    winternitz_signatures : Script,
-    script_generator : Box<dyn script_generator>,
+    pub input_parameters : Vec<u8>,
+    pub winternitz_signatures : Script,
+    pub script_generator : Box<dyn script_generator>,
 }
 
 impl bitvm20_execution_context {
