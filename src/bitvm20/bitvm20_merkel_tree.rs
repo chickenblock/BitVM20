@@ -1,10 +1,13 @@
 use std::collections::HashMap;
+use std::ops::{Add, Shl, Sub};
 
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
 use crate::bitvm20::bitvm20_transaction::{bitvm20_transaction};
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
+use ark_ff::Zero;
 use num_bigint::BigUint;
 use crate::bitvm20::bitvm20_execution_context::bitvm20_execution_context;
+use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
 
 pub const levels : usize = 5; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);
@@ -161,7 +164,32 @@ impl bitvm20_merkel_tree {
 
     // TODO
     pub fn primary_validate_transaction(&self, tx : &bitvm20_transaction) -> bool {
-        return false;
+        let from_entry = match self.get_entry_by_public_key(&tx.from_public_key) {
+            None => { return false; },
+            Some(from_entry) => from_entry
+        };
+
+        let to_entry = match self.get_entry_by_public_key(&tx.to_public_key) {
+            None => { return false; },
+            Some(to_entry) => to_entry
+        };
+
+        // nonce will overflow
+        if tx.from_nonce == u64::MAX {
+            return false;
+        }
+
+        // from user does not have enough balance
+        if from_entry.balance.lt(&tx.value) {
+            return false;
+        }
+
+        // balnce of the to use may not overflow
+        if BigUint::zero().add(1u32).shl(256u32).le(&(to_entry.balance.clone().add(&tx.value))) {
+            return false;
+        }
+
+        return true;
     }
 
     // TODO
