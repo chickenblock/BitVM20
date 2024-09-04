@@ -93,7 +93,7 @@ mod test {
         }
 
         let (validation_result, exec_contexts) = proof.generate_execution_contexts_for_merkel_proof_validation(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
-        assert!(validation_result, "rust offchain basic transaction validation did not pass2");
+        assert!(validation_result, "rust offchain merkel proof validation did not pass");
 
         println!("generated execution contexts");
 
