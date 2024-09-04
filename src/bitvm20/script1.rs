@@ -5,7 +5,7 @@ use crate::bitvm20::utils::{verify_input_data,pop_bytes,data_to_signable_balke3_
 use crate::signatures::winternitz::PublicKey;
 
 // inputs are previous merkel state root in bytes
-pub fn construct_script1(winternitz_public_key: &PublicKey, original_merkel_state_root : Vec<u8>) -> Script {
+pub fn construct_script1(winternitz_public_key: &PublicKey, original_merkel_state_root : &Vec<u8>) -> Script {
     script!{
         { verify_input_data(&winternitz_public_key, 32) }
 
@@ -56,7 +56,7 @@ mod test {
                 {(*x)}
             }
             { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script1(&winternitz_public_key, merkel_root.clone()) }
+            { construct_script1(&winternitz_public_key, &merkel_root) }
         };
 
         println!(
@@ -69,7 +69,7 @@ mod test {
                 {(*x)}
             }
             { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script1(&winternitz_public_key, merkel_root.clone()) }
+            { construct_script1(&winternitz_public_key, &merkel_root) }
 
             OP_0 OP_EQUAL // on correct execution this script must fail
         });

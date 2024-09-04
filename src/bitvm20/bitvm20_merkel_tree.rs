@@ -11,6 +11,8 @@ use ark_ff::Zero;
 use num_bigint::BigUint;
 use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
 
+use super::bitvm20_execution_context::script1_generator;
+use super::script1::construct_script1;
 use super::script2_3::construct_script2_3;
 use super::script4::construct_script4;
 
@@ -214,14 +216,28 @@ impl bitvm20_merkel_tree {
     }
 
     /* TODO
-    fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
+    pub fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
 
     }*/
 
     /* TODO
-    fn undo_transaction(&self, tx : &bitvm20_transaction) -> bool {
+    pub fn undo_transaction(&self, tx : &bitvm20_transaction) -> bool {
 
     }*/
+
+    pub fn generate_execution_contexts_for_merkel_root_validation(&self, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> Vec<bitvm20_execution_context> {
+        let mut result = vec![];
+
+        let mut input : Vec<u8> = vec![];
+        input.extend_from_slice(&self.generate_root());
+        if(winternitz_private_keys.len() > 0) {
+            result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(script1_generator::new(construct_script1, &input))));
+        } else {
+            result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(script1_generator::new(construct_script1, &input))));
+        }
+
+        return result;
+    }
 }
 
 impl bitvm20_merkel_proof {

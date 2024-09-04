@@ -6,6 +6,26 @@ pub trait script_generator {
     fn generate_script(&self, winternitz_public_key: &PublicKey) -> Script;
 }
 
+pub struct script1_generator {
+    pub script_generator_input_param : Vec<u8>,
+    pub script_generator_function : fn(&PublicKey, script_generator_input_param : &Vec<u8>) -> Script,
+}
+
+impl script1_generator {
+    pub fn new(script_generator_function : fn(&PublicKey, script_generator_input_param : &Vec<u8>) -> Script, script_generator_input_param : &Vec<u8>) -> script1_generator {
+        return script1_generator {
+            script_generator_input_param: script_generator_input_param.clone(),
+            script_generator_function: script_generator_function,
+        };
+    }
+}
+
+impl script_generator for script1_generator {
+    fn generate_script(&self, winternitz_public_key: &PublicKey) -> Script {
+        return (self.script_generator_function)(winternitz_public_key, &self.script_generator_input_param);
+    }
+}
+
 pub struct simple_script_generator {
     pub script_generator_function : fn(&PublicKey) -> Script,
 }
