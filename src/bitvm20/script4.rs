@@ -145,7 +145,7 @@ mod test {
             winternitz_private_keys.push(String::from(winternitz_private_key));
         }
 
-        let (validation_result, exec_contexts) = mt.generate_scripts_for_primary_validation_of_transaction(&tx, &winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        let (validation_result, exec_contexts) = mt.generate_execution_contexts_for_primary_validation_of_transaction(&tx, &winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
         assert!(validation_result, "rust offchain basic transaction validation did not pass2");
 
         println!("generated execution contexts");

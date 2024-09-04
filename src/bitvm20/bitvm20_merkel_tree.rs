@@ -200,7 +200,7 @@ impl bitvm20_merkel_tree {
         return true;
     }
 
-    pub fn generate_scripts_for_primary_validation_of_transaction(&self, tx : &bitvm20_transaction, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> (bool, Vec<bitvm20_execution_context>) {
+    pub fn generate_execution_contexts_for_primary_validation_of_transaction(&self, tx : &bitvm20_transaction, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> (bool, Vec<bitvm20_execution_context>) {
         let from_entry = match self.get_entry_by_public_key(&tx.from_public_key) {
             None => { return (false, vec![]); },
             Some(from_entry) => from_entry
@@ -268,21 +268,27 @@ impl bitvm20_merkel_proof {
         return curr_hash == self.root_n_siblings[0];
     }
 
-    pub fn serialize_for_script2_3(&self) -> Vec<u8> {
-        let mut result : Vec<u8> = vec![];
-        let mut index = self.entry_index;
-        for i in (0..levels).rev() {
-            result.push(((index >> i) & 0x01) as u8)
-        }
-        for x in &self.serialized_entry {
-            result.push(*x);
-        }
-        for x in self.root_n_siblings.iter().rev() {
-            for y in x {
-                result.push(*y);
+    pub fn generate_execution_contexts_for_merkel_proof_validation(&self, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> (bool, Vec<bitvm20_execution_context>) {
+        let mut result = vec![];
+
+        {
+            let mut input : Vec<u8> = vec![];
+            let mut index = self.entry_index;
+            for i in (0..levels).rev() {
+                input.push(((index >> i) & 0x01) as u8)
+            }
+            input.extend_from_slice(&self.serialized_entry);
+            for x in self.root_n_siblings.iter().rev() {
+                input.extend_from_slice(x);
+            }
+            if(winternitz_private_keys.len() > 0) {
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script4))));
+            } else {
+                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script4))));
             }
         }
-        return result;
+
+        return (self.validate_proof(), result);
     }
 }
 
