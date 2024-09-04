@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::{Add, Shl, Sub};
 
 use crate::treepp::{Script};
-use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
+use crate::bitvm20::bitvm20_entry::{bitvm20_entry,default_bitvm20_entry};
 use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context,simple_script_generator};
 use crate::bitvm20::bitvm20_transaction::{bitvm20_transaction};
 use crate::signatures::winternitz::PublicKey;
@@ -11,6 +11,7 @@ use ark_ff::Zero;
 use num_bigint::BigUint;
 use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
 
+use super::script2_3::construct_script2_3;
 use super::script4::construct_script4;
 
 pub const levels : usize = 5; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
@@ -24,7 +25,7 @@ pub struct bitvm20_merkel_tree {
 
 pub struct bitvm20_merkel_proof {
     root_n_siblings : [[u8; 32]; (levels + 1)], // root is at index 0, rest all are siblings to the entry or its parents
-    serialized_entry : [u8; bitvm20_entry_serialized_size], // serialized entry size
+    entry : bitvm20_entry,
     entry_index: usize,
 }
 
@@ -103,7 +104,7 @@ impl bitvm20_merkel_tree {
 
         let mut result : bitvm20_merkel_proof = bitvm20_merkel_proof {
             root_n_siblings: [[0; 32]; (levels+1)],
-            serialized_entry: self.entries[index].serialize(),
+            entry: self.entries[index].clone(),
             entry_index: index,
         };
 
@@ -238,13 +239,7 @@ impl bitvm20_merkel_proof {
 
         let mut index = self.entry_index;
 
-        let mut curr_hash : [u8; 32] = [0; 32];
-        {
-            let mut hasher = blake3::Hasher::new();
-            hasher.update(&self.serialized_entry);
-            let data_hash = hasher.finalize();
-            curr_hash = (*data_hash.as_bytes());
-        }
+        let mut curr_hash = self.entry.hash();
 
         let mut curr_level = levels;
         while curr_level > 0 {
@@ -277,14 +272,14 @@ impl bitvm20_merkel_proof {
             for i in (0..levels).rev() {
                 input.push(((index >> i) & 0x01) as u8)
             }
-            input.extend_from_slice(&self.serialized_entry);
+            input.extend_from_slice(&self.entry.serialize());
             for x in self.root_n_siblings.iter().rev() {
                 input.extend_from_slice(x);
             }
             if(winternitz_private_keys.len() > 0) {
-                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script4))));
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script2_3))));
             } else {
-                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script4))));
+                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script2_3))));
             }
         }
 
