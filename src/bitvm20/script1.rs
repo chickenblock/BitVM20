@@ -6,7 +6,7 @@ use crate::signatures::winternitz::PublicKey;
 
 // inputs are previous merkel state root in bytes
 pub fn construct_script1(winternitz_public_key: &PublicKey, original_merkel_state_root : &Vec<u8>) -> Script {
-    script!{
+    return script!{
         { verify_input_data(&winternitz_public_key, 32) }
 
         // LOGIC STARTS HERE
@@ -20,7 +20,7 @@ pub fn construct_script1(winternitz_public_key: &PublicKey, original_merkel_stat
         }
         OP_FROMALTSTACK
         {32} OP_EQUAL OP_NOT
-    }
+    };
 }
 
 #[cfg(test)]
@@ -47,7 +47,7 @@ mod test {
         let winternitz_public_key = generate_public_key(winternitz_private_key);
         println!(
             "script 1 size:\n \t{:?} bytes",
-            construct_script1(&winternitz_public_key, &vec![0u8; 32]).len()
+            construct_script1(&winternitz_public_key, &vec![0xffu8; 32]).len()
         );
 
         let mut mt = bitvm20_merkel_tree::new();
