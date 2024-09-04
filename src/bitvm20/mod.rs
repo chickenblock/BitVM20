@@ -2,6 +2,7 @@ pub mod utils;
 pub mod bitvm20_entry;
 pub mod bitvm20_merkel_tree;
 pub mod serde_for_coordinate;
+pub mod serde_for_uint;
 pub mod bitvm20_transaction;
 pub mod bitvm20_execution_context;
 pub mod script0;
