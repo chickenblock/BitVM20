@@ -245,7 +245,7 @@ mod test {
         assert!(tx.verify_signature(), "rust offchain signature verification did not pass");
         println!("tx.verify_signature says transaction has valid signature");
 
-        // generate 1018 privet keys
+        // generate a vector of 1018 private keys
         let mut winternitz_private_keys = vec![];
         for _ in 0..1018 {
             winternitz_private_keys.push(String::from(winternitz_private_key));

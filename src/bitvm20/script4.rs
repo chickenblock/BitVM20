@@ -143,7 +143,7 @@ mod test {
         let validation_result = mt.primary_validate_transaction(&tx);
         assert!(validation_result, "rust offchain basic transaction validation did not pass1");
 
-        // generate 1 privet keys
+        // generate a vector of 1 private keys
         let mut winternitz_private_keys = vec![];
         for _ in 0..1 {
             winternitz_private_keys.push(String::from(winternitz_private_key));

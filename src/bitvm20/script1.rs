@@ -25,9 +25,15 @@ pub fn construct_script1(winternitz_public_key: &PublicKey, original_merkel_stat
 
 #[cfg(test)]
 mod test {
+    use ark_bn254::{Fq, G1Affine};
+    use ark_ff::BigInt;
+    use num_bigint::BigUint;
+
     use super::*;
+    use crate::bitvm20::bitvm20_entry::bitvm20_entry;
+    use crate::bitvm20::bitvm20_merkel_tree::{bitvm20_merkel_tree, bitvm20_merkel_tree_size};
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,sign_digits};
+    use crate::signatures::winternitz::{generate_public_key,sign_digits, N};
     use crate::hash::blake3::*;
 
     // The secret key
@@ -39,39 +45,38 @@ mod test {
         #[rustfmt::skip]
 
         let winternitz_public_key = generate_public_key(winternitz_private_key);
-
-        // merkel root to be compared against
-        let merkel_root: Vec<u8> = vec![0x01, 0x02, 0x0a, 0x0b, 0x11, 0x12, 0x2a, 0x2b,
-                                    0x31, 0x03, 0x3a, 0x03, 0x44, 0x14, 0x24, 0xfb,
-                                    0xa1, 0x02, 0xba, 0xcb, 0x1e, 0xd2, 0xea, 0x2f,
-                                    0x31, 0xa3, 0xba, 0x0c, 0x44, 0xe4, 0xff, 0xfb];
-        
-        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&merkel_root);
-
-        println!("merkel_root : {:x?}", merkel_root);
-        println!("signable_hash_digits : {:x?}", signable_hash_digits);
-
-        let script = script! {
-            for x in (&merkel_root).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script1(&winternitz_public_key, &merkel_root) }
-        };
-
         println!(
             "script 1 size:\n \t{:?} bytes",
-            script.len(),
+            construct_script1(&winternitz_public_key, &vec![0u8; 32]).len()
         );
 
-        run(script! {
-            for x in (&merkel_root).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script1(&winternitz_public_key, &merkel_root) }
+        let mut mt = bitvm20_merkel_tree::new();
+        for i in 0..bitvm20_merkel_tree_size {
+            mt.assign(bitvm20_entry{
+                public_key: G1Affine::new_unchecked(Fq::new(BigInt::new([(i+24) as u64; 4])), Fq::new(BigInt::new([(i+24) as u64; 4]))),
+                nonce: ((i + 400) * 13) as u64,
+                balance: BigUint::from_bytes_be(&[(((i + 13) * 13) & 0xff) as u8; 10]),
+            });
+        }
 
-            OP_0 OP_EQUAL // on correct execution this script must fail
-        });
+        // generate vector of 1 private keys
+        let mut winternitz_private_keys = vec![];
+        for _ in 0..1 {
+            winternitz_private_keys.push(String::from(winternitz_private_key));
+        }
+
+        let exec_contexts = mt.generate_execution_contexts_for_merkel_root_validation(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+
+        println!("generated execution contexts");
+
+        for (i, ec) in exec_contexts.iter().enumerate() {
+            let s = ec.get_executable();
+            println!("script no. {} of size {}\n", i, ec.get_script().len());
+            //println!("input : {:x?}\n", ec.input_parameters);
+            run(script!{
+                { s }
+                OP_NOT
+            });
+        }
     }
 }
