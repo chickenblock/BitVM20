@@ -105,9 +105,15 @@ pub fn construct_script4(winternitz_public_key: &PublicKey) -> Script {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::bitvm20::{bitvm20_entry::bitvm20_entry, bitvm20_merkel_tree::bitvm20_merkel_tree};
     use crate::run;
     use crate::signatures::winternitz::{generate_public_key,sign_digits};
-    use num_bigint::{BigUint,RandomBits};
+    use ark_bn254::{Fq, G1Affine};
+    use num_traits::Zero;
+    use crate::signatures::winternitz::N;
+    use std::ops::Add;
+    use ark_ff::BigInt;
+    use num_bigint::BigUint;
 
     // The secret key
     const winternitz_private_key: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
@@ -118,71 +124,40 @@ mod test {
 
         let winternitz_public_key = generate_public_key(winternitz_private_key);
 
-        let value : BigUint =        BigUint::parse_bytes(b"1000000000", 10).expect("failed to parse value");
-        let to_balance : BigUint =   BigUint::parse_bytes(b"1157920892", 10).expect("failed to parse to_balance");
-        let from_balance : BigUint = BigUint::parse_bytes(b"1000000000", 10).expect("failed to parse from_balance");
-        let from_nonce : u64 = 0xfffffffffffffffe;
-
-        let mut data: Vec<u8> = vec![];
-        let temp = value.to_bytes_le();
+        let mut mt = bitvm20_merkel_tree::new();
+        
         for i in 0..32 {
-            if i < temp.len() {
-                data.push(temp[i]);
-            }
-            else {
-                data.push(0x00);
-            }
-        }
-        let temp = to_balance.to_bytes_le();
-        for i in 0..32 {
-            if i < temp.len() {
-                data.push(temp[i]);
-            }
-            else {
-                data.push(0x00);
-            }
-        }
-        let temp = from_balance.to_bytes_le();
-        for i in 0..32 {
-            if i < temp.len() {
-                data.push(temp[i]);
-            }
-            else {
-                data.push(0x00);
-            }
-        }
-        let mut temp = from_nonce;
-        for _ in 0..8 {
-            data.push((temp & 0xff) as u8);
-            temp >>= 8;
+            mt.assign(bitvm20_entry{
+                public_key: G1Affine::new_unchecked(Fq::new(BigInt::new([(i+25) as u64; 4])), Fq::new(BigInt::new([(i+26) as u64; 4]))),
+                nonce: ((i + 400) * 13) as u64,
+                balance: BigUint::zero().add(1000000000u64),
+            });
         }
 
-        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&data);
+        let tx = mt.generate_transaction(3, 4, &BigUint::zero().add(1000000u64)).unwrap();
 
-        println!("data : {:x?}", data);
-        println!("signable_hash_digits : {:x?}", signable_hash_digits);
+        let validation_result = mt.primary_validate_transaction(&tx);
+        assert!(validation_result, "rust offchain basic transaction validation did not pass1");
 
-        let script = script! {
-            for x in (&data).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script4(&winternitz_public_key) }
-        };
+        // generate 1018 privet keys
+        let mut winternitz_private_keys = vec![];
+        for _ in 0..1 {
+            winternitz_private_keys.push(String::from(winternitz_private_key));
+        }
 
-        println!(
-            "script 4 size:\n \t{:?} bytes",
-            script.len(),
-        );
+        let (validation_result, exec_contexts) = mt.generate_scripts_for_primary_validation_of_transaction(&tx, &winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        assert!(validation_result, "rust offchain basic transaction validation did not pass2");
 
-        run(script! {
-            for x in (&data).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script4(&winternitz_public_key) }
+        println!("generated execution contexts");
 
-            OP_0 OP_EQUAL // on correct execution this script must fail
-        });
+        for (i, ec) in exec_contexts.iter().enumerate() {
+            let s = ec.get_executable();
+            println!("script no. {} of size {}\n", i, ec.get_script().len());
+            //println!("input : {:x?}\n", ec.input_parameters);
+            run(script!{
+                { s }
+                OP_NOT
+            });
+        }
     }
 }
