@@ -112,7 +112,7 @@ impl bitvm20_transaction {
 
     pub fn sign_transaction(&mut self, private_key : &Fr) {
         // k = random scalar
-        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64*);
+        let mut prng = ChaCha20Rng::seed_from_u64(Utc::now().timestamp() as u64);
         let k : Fr = Fr::rand(&mut prng);
 
         // R = kG
