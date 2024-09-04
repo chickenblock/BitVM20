@@ -191,7 +191,7 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&eP_next));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     input.push(i as u8);
-                    input.extend_from_slice(&serialize_254bit_element(&BigUint::from(e)));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&eP));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
@@ -235,7 +235,7 @@ impl bitvm20_transaction {
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&Rv_next));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&power_i));
                     input.push(i as u8);
-                    input.extend_from_slice(&serialize_254bit_element(&BigUint::from(self.s)));
+                    input.extend_from_slice(&serialize_bn254_element(&BigUint::from(self.s), false));
                     input.extend_from_slice(&serialize_G1Projective_for_signature_verification(&Rv));
                     if(winternitz_private_keys.len() > 0) {
                         result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
@@ -279,14 +279,14 @@ impl bitvm20_transaction {
     }
 }
 
-pub fn serialize_G1Projective_for_signature_verification(p : &G1Projective) -> [u8; 108] {
-    let mut result : [u8; 36*3] = [0; 36*3];
+pub fn serialize_G1Projective_for_signature_verification(p : &G1Projective) -> [u8; 72] {
+    let mut result : [u8; 72] = [0; 72];
     if p.is_zero() { // if it is a point on infinity, then everything is 0
         return result;
     }
-    result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.z), true));
-    result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.y), true));
-    result[72..108].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.x), true));
+    let p = G1Affine::from(p.clone());
+    result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.y), true));
+    result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.x), true));
     return result;
 }
 

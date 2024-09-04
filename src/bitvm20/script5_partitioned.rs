@@ -79,16 +79,14 @@ pub fn G1Projective_equal() -> Script {
     }
 }
 
-const input_point_size_on_stack : usize = 36 * 3;
+const input_point_size_on_stack : usize = 36 * 2;
 fn convert_to_G1Projective_from_top_bytes() -> Script {
     return script! {
         { U254::from_bytes() }
         { Fq::toaltstack() }
         { U254::from_bytes() }
-        { Fq::toaltstack() }
-        { U254::from_bytes() }
         { Fq::fromaltstack() }
-        { Fq::fromaltstack() }
+        { G1Affine::into_projective() }
     };
 }
 
@@ -111,6 +109,7 @@ pub fn construct_script5_2(winternitz_public_key: &PublicKey) -> Script {
         // now the top of the stack are i and then s and then Ri-1
         OP_TOALTSTACK
         { U254::from_bytes() }
+        { Fr::decode_montgomery() } // need to decode montgomery for the scalar, for scalar multiplication
         { Fr::convert_to_le_bits() }
         OP_FROMALTSTACK
         OP_ROLL // fetch the ith bit
