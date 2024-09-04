@@ -104,8 +104,8 @@ pub fn deserialize_g1affine(b : &[u8]) -> G1Affine {
         return G1Affine::zero();
     }
     return G1Affine::new_unchecked(
-        Fq::from(deserialize_bn254_element(&b[220..256], true)),
-        Fq::from(deserialize_bn254_element(&b[184..220], true))
+        Fq::from(deserialize_bn254_element(&b[36..72], true)),
+        Fq::from(deserialize_bn254_element(&b[0..36], true))
     );
 }
 
