@@ -5,6 +5,8 @@ use ark_ec::PrimeGroup;
 use std::ops::Mul;
 use crate::bitvm20::serde_for_coordinate::{serialize_g1affine,deserialize_g1affine};
 
+use super::bitvm20_execution_context::bitvm20_execution_context;
+
 pub const bitvm20_entry_serialized_size : usize = (36 + 36 + 8 + 32);
 
 #[derive(PartialEq, Debug)]

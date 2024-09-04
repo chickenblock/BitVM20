@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
+use crate::bitvm20::bitvm20_transaction::{bitvm20_transaction};
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 
 pub const levels : usize = 5; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
@@ -141,6 +142,30 @@ impl bitvm20_merkel_tree {
     fn undo_transaction(&self, tx : &bitvm20_transaction) -> bool {
 
     }*/
+
+    pub fn generate_transaction(&self, from : usize, to : usize, value : &BigUint) -> Option<bitvm20_transaction> {
+        match self.get_entry_by_index(from) {
+            None => { return None; },
+            Some(from) => {
+                match self.get_entry_by_index(to) {
+                    None => { return None; }
+                    Some(to) => {
+                        return Some(bitvm20_transaction::new_unsigned(from, to, value));
+                    }
+                }
+            }
+        }
+    }
+
+    // TODO
+    pub fn primary_validate_transaction(&self, tx : &bitvm20_transaction) -> bool {
+        return false;
+    }
+
+    // TODO
+    pub fn generate_scripts_for_primary_validation_of_transaction(from : &bitvm20_entry, to : &bitvm20_entry, value: &BigUint) -> (bool, Vec<bitvm20_execution_context>) {
+        return (false, vec![]);
+    }
 }
 
 impl bitvm20_merkel_proof {
