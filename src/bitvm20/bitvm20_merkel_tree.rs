@@ -138,21 +138,6 @@ impl bitvm20_merkel_tree {
         return Some(result);
     }
 
-    /* TODO
-    fn validate_transaction(&self, tx : &bitvm20_transaction) -> bool {
-
-    }*/
-
-    /* TODO
-    fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
-
-    }*/
-
-    /* TODO
-    fn undo_transaction(&self, tx : &bitvm20_transaction) -> bool {
-
-    }*/
-
     pub fn generate_transaction(&self, from : usize, to : usize, value : &BigUint) -> Option<bitvm20_transaction> {
         match self.get_entry_by_index(from) {
             None => { return None; },
@@ -227,6 +212,16 @@ impl bitvm20_merkel_tree {
 
         return (true, result);
     }
+
+    /* TODO
+    fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
+
+    }*/
+
+    /* TODO
+    fn undo_transaction(&self, tx : &bitvm20_transaction) -> bool {
+
+    }*/
 }
 
 impl bitvm20_merkel_proof {
