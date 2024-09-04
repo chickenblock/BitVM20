@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry,bitvm20_entry_serialized_size,default_bitvm20_entry};
 use crate::bitvm20::bitvm20_transaction::{bitvm20_transaction};
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
+use num_bigint::BigUint;
+use crate::bitvm20::bitvm20_execution_context::bitvm20_execution_context;
 
 pub const levels : usize = 5; // number of elements in the merkel tree is 2^levels -> height being (levels+1)
 pub const bitvm20_merkel_tree_size : usize = (1<<levels);

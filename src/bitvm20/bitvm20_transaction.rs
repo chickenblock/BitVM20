@@ -4,6 +4,7 @@ use ark_ff::{BigInt, BigInteger, PrimeField, UniformRand};
 use ark_ec::{AffineRepr, PrimeGroup};
 use std::ops::{Mul,Add,Neg};
 use crate::bitvm20::serde_for_coordinate::{serialize_g1affine,serialize_fr,deserialize_g1affine,deserialize_fr,serialize_bn254_element};
+use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
@@ -62,31 +63,22 @@ impl bitvm20_transaction {
 
     pub fn serialize_without_signature(&self) -> [u8; 184] {
         let mut result : [u8; 184] = [0; 184];
-        let mut i : usize = 0;
-        result[0..72].copy_from_slice(&serialize_g1affine(&self.from_public_key));i+=72;
-        result[72..144].copy_from_slice(&serialize_g1affine(&self.to_public_key));i+=72;
-        while i < 152 {
-            result[i] = ((self.from_nonce >> ((i-144)*8)) & 0xff) as u8; i+=1;
-        }
-        let temp = self.value.to_bytes_le();
-        while i < 184 && (i-152) < temp.len() {
-            result[i] = temp[i-152]; i+=1;
-        }
+        result[0..72].copy_from_slice(&serialize_g1affine(&self.from_public_key));
+        result[72..144].copy_from_slice(&serialize_g1affine(&self.to_public_key));
+        result[144..152].copy_from_slice(&serialize_u64(self.from_nonce));
+        result[152..184].copy_from_slice(&serialize_256bit_biguint(&self.value));
         return result;
     }
 
     pub fn deserialize_without_signature(data : &[u8]) -> bitvm20_transaction {
-        let mut result : bitvm20_transaction = bitvm20_transaction {
+        let result : bitvm20_transaction = bitvm20_transaction {
             from_public_key: deserialize_g1affine(&data[0..72]),
             to_public_key: deserialize_g1affine(&data[72..144]),
-            from_nonce: 0,
-            value: BigUint::from_bytes_le(&data[152..184]),
+            from_nonce: deserialize_u64(&data[144..152]),
+            value: deserialize_256bit_biguint(&data[152..184]),
             r: G1Affine::zero(),
             s: Fr::zero(),
         };
-        for i in (144..152) {
-            result.from_nonce |= ((data[i] as u64) << ((i-144)*8));
-        }
         return result;
     }
 
@@ -310,7 +302,7 @@ mod test {
 
         let from_private_key : Fr = Fr::rand(&mut prng);
 
-        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
+        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 1215421545, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
         let to : bitvm20_entry = bitvm20_entry::new(&Fr::rand(&mut prng), 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid to balance"));
 
         let mut tx1 = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
