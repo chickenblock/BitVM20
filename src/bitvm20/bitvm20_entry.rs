@@ -4,8 +4,7 @@ use ark_ff::{BigInt,PrimeField};
 use ark_ec::PrimeGroup;
 use std::ops::Mul;
 use crate::bitvm20::serde_for_coordinate::{serialize_g1affine,deserialize_g1affine};
-
-use super::bitvm20_execution_context::bitvm20_execution_context;
+use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
 
 pub const bitvm20_entry_serialized_size : usize = (36 + 36 + 8 + 32);
 
@@ -35,27 +34,18 @@ impl bitvm20_entry {
     // serialized form of the bitvm20_entry
     pub fn serialize(&self) -> [u8; bitvm20_entry_serialized_size] {
         let mut result : [u8; bitvm20_entry_serialized_size] = [0; bitvm20_entry_serialized_size];
-        let mut i : usize = 0;
-        result[0..72].copy_from_slice(&serialize_g1affine(&self.public_key));i+=72;
-        while i < (80) {
-            result[i] = ((self.nonce >> ((i-72)*8)) & 0xff) as u8; i+=1;
-        }
-        let temp = self.balance.to_bytes_le();
-        while i < 112 && (i-80) < temp.len() {
-            result[i] = temp[i-80]; i+=1;
-        }
+        result[0..72].copy_from_slice(&serialize_g1affine(&self.public_key));
+        result[72..80].copy_from_slice(&serialize_u64(self.nonce));
+        result[80..112].copy_from_slice(&serialize_256bit_biguint(&self.balance));
         return result;
     }
 
     pub fn deserialize(data : &[u8; bitvm20_entry_serialized_size]) -> bitvm20_entry {
-        let mut result = bitvm20_entry {
+        let result = bitvm20_entry {
             public_key: deserialize_g1affine(&data[0..72]),
-            nonce: 0,
-            balance: BigUint::from_bytes_le(&data[80..112]),
+            nonce: deserialize_u64(&data[72..80]),
+            balance: deserialize_256bit_biguint(&data[80..112]),
         };
-        for i in (72..80) {
-            result.nonce |= ((data[i] as u64) << ((i-72)*8));
-        }
         return result;
     }
 
