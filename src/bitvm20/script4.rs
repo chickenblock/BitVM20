@@ -123,6 +123,10 @@ mod test {
         #[rustfmt::skip]
 
         let winternitz_public_key = generate_public_key(winternitz_private_key);
+        println!(
+            "script 4 size:\n \t{:?} bytes",
+            construct_script4(&winternitz_public_key).len()
+        );
 
         let mut mt = bitvm20_merkel_tree::new();
         
@@ -139,7 +143,7 @@ mod test {
         let validation_result = mt.primary_validate_transaction(&tx);
         assert!(validation_result, "rust offchain basic transaction validation did not pass1");
 
-        // generate 1018 privet keys
+        // generate 1 privet keys
         let mut winternitz_private_keys = vec![];
         for _ in 0..1 {
             winternitz_private_keys.push(String::from(winternitz_private_key));

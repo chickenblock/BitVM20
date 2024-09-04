@@ -225,15 +225,7 @@ mod test {
     fn test_bitvm20_script5_partitioned() {
         #[rustfmt::skip]
 
-        println!("stats :");
-        println!("G1Projective::double : {}", G1Projective::double().len());
-        println!("G1Projective::add : {}", G1Projective::add().len());
-        println!("G1Projective::into_affine : {}", G1Projective::into_affine().len());
-        println!("G1Projective::equalverify : {}", G1Projective::equalverify().len());
-        println!("G1Projective_equal : {}", G1Projective_equal().len());
-
         let winternitz_public_key = generate_public_key(winternitz_private_key);
-
         println!(
             "script 5 size:\n \t{:?}, {:?}, {:?}, {:?} bytes",
             construct_script5_1(&winternitz_public_key).len(),

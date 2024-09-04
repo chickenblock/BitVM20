@@ -52,8 +52,8 @@ pub fn construct_script2_3(winternitz_public_key: &PublicKey) -> Script {
 mod test {
     use super::*;
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,sign_digits};
-    use num_bigint::{BigUint,RandomBits};
+    use crate::signatures::winternitz::{generate_public_key,N};
+    use num_bigint::{BigUint};
     use crate::bitvm20::bitvm20_entry::bitvm20_entry;
     use crate::bitvm20::bitvm20_merkel_tree::{bitvm20_merkel_tree,bitvm20_merkel_proof};
     use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
@@ -67,6 +67,10 @@ mod test {
         #[rustfmt::skip]
 
         let winternitz_public_key = generate_public_key(winternitz_private_key);
+        println!(
+            "script 2_3 size:\n \t{:?} bytes",
+            construct_script2_3(&winternitz_public_key).len()
+        );
 
         let mut mt = bitvm20_merkel_tree::new();
         for i in 0..bitvm20_merkel_tree_size {
@@ -82,34 +86,25 @@ mod test {
         assert!(!p.is_none(), "Generated none proof");
         let proof = p.unwrap();
 
-        let data = proof.serialize_for_script2_3();
+        // generate 1018 privet keys
+        let mut winternitz_private_keys = vec![];
+        for _ in 0..1 {
+            winternitz_private_keys.push(String::from(winternitz_private_key));
+        }
 
-        let signable_hash_digits : [u8; 40] = data_to_signable_balke3_digits(&data);
+        let (validation_result, exec_contexts) = proof.generate_execution_contexts_for_merkel_proof_validation(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        assert!(validation_result, "rust offchain basic transaction validation did not pass2");
 
-        println!("data : {:x?}", data);
-        println!("signable_hash_digits : {:x?}", signable_hash_digits);
+        println!("generated execution contexts");
 
-        let script = script! {
-            for x in (&data).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script2_3(&winternitz_public_key) }
-        };
-
-        println!(
-            "script 2_3 size:\n \t{:?} bytes",
-            script.len(),
-        );
-
-        run(script! {
-            for x in (&data).iter().rev() {
-                {(*x)}
-            }
-            { sign_digits(winternitz_private_key, signable_hash_digits) }
-            { construct_script2_3(&winternitz_public_key) }
-
-            OP_0 OP_EQUAL // on correct execution this script must fail
-        });
+        for (i, ec) in exec_contexts.iter().enumerate() {
+            let s = ec.get_executable();
+            println!("script no. {} of size {}\n", i, ec.get_script().len());
+            //println!("input : {:x?}\n", ec.input_parameters);
+            run(script!{
+                { s }
+                OP_NOT
+            });
+        }
     }
 }
