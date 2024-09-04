@@ -174,6 +174,11 @@ impl bitvm20_merkel_tree {
             Some(to_entry) => to_entry
         };
 
+        // nonce does not match
+        if tx.from_nonce != from_entry.nonce {
+            return false;
+        }
+
         // nonce will overflow
         if tx.from_nonce == u64::MAX {
             return false;
