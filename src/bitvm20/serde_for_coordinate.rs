@@ -83,6 +83,36 @@ pub fn deserialize_bn254_element(d : &[u8], is_Fq : bool) -> BigUint {
     return deserialize_254bit_element(d).mul(&Rinv).rem(&N);
 }
 
+use ark_bn254::{Fr, Fq, G1Affine, G1Projective};
+
+pub fn serialize_g1affine(p : &G1Affine) -> [u8; 72] {
+    let mut result : [u8; 72] = [0; 72];
+    if p.is_zero() {
+        return result;
+    }
+    result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.y), true));
+    result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(p.x), true));
+    return result;
+}
+
+pub fn serialize_fr(s : &Fr) -> [u8; 36] {
+    return serialize_bn254_element(&BigUint::from(s.clone()), false);
+}
+
+pub fn deserialize_g1affine(b : &[u8]) -> G1Affine {
+    if b.into_iter().all(|&b| b == 0) {
+        return G1Affine::zero();
+    }
+    return G1Affine::new_unchecked(
+        Fq::from(deserialize_bn254_element(&b[220..256], true)),
+        Fq::from(deserialize_bn254_element(&b[184..220], true))
+    );
+}
+
+pub fn deserialize_fr(b : &[u8]) -> Fr {
+    return Fr::from(deserialize_bn254_element(b, false));
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
