@@ -207,7 +207,7 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
 mod test {
     use super::*;
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,sign_digits, N};
+    use crate::signatures::winternitz::{generate_public_key, ZeroPublicKey};
     use crate::bitvm20::bitvm20_entry::bitvm20_entry;
     use crate::bitvm20::bitvm20_transaction::bitvm20_transaction;
     use num_bigint::{BigUint,RandomBits};
@@ -242,18 +242,13 @@ mod test {
 
         let mut tx = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
         tx.sign_transaction(&from_private_key);
+
         assert!(tx.verify_signature(), "rust offchain signature verification did not pass");
         println!("tx.verify_signature says transaction has valid signature");
 
-        // generate a vector of 1018 private keys
-        let mut winternitz_private_keys = vec![];
-        for _ in 0..1018 {
-            winternitz_private_keys.push(String::from(winternitz_private_key));
-        }
+        let winternitz_private_keys = vec![String::from(winternitz_private_key); 1018];
 
-        println!("generated winternitz private keys");
-
-        let (verification_result, exec_contexts) = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        let (verification_result, exec_contexts) = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys, &[ZeroPublicKey; 0], &[script!{}; 0]);
 
         assert!(verification_result, "rust offchain signature verification did not pass");
         println!("tx.generate_execution_contexts_for_signature_verification says transaction has valid signature");

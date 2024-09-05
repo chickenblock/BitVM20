@@ -1,5 +1,5 @@
 use crate::treepp::{script, Script};
-use crate::signatures::winternitz::{PublicKey,generate_public_key,sign_digits,N};
+use crate::signatures::winternitz::{generate_public_key, sign_digits, PublicKey, ZeroPublicKey};
 use crate::bitvm20::utils::data_to_signable_balke3_digits;
 
 pub trait script_generator {
@@ -58,7 +58,7 @@ impl bitvm20_execution_context {
     pub fn new(winternitz_private_key: &str, input_parameters: &Vec<u8>, script_generator: Box<dyn script_generator>) -> bitvm20_execution_context {
         return bitvm20_execution_context {
             winternitz_private_key: String::from(winternitz_private_key),
-            winternitz_public_key: [[0; 20]; N as usize],
+            winternitz_public_key: ZeroPublicKey,
 
             input_parameters: input_parameters.clone(),
             winternitz_signatures: script!{},

@@ -4,7 +4,7 @@ use num_bigint::BigUint;
 use num_traits::Num;
 use std::ops::{Add, Mul, Shl, Rem};
 
-pub fn serialize_254bit_element(s : &BigUint) -> [u8; 36] {
+fn serialize_254bit_element(s : &BigUint) -> [u8; 36] {
     let mut result : [u8; 36] = [0; 36];
     let mut bits_consumed : usize = 0;
     let mut bytes_produced : usize = 0;
@@ -25,7 +25,7 @@ pub fn serialize_254bit_element(s : &BigUint) -> [u8; 36] {
     return result;
 }
 
-pub fn deserialize_254bit_element(d : &[u8]) -> BigUint {
+fn deserialize_254bit_element(d : &[u8]) -> BigUint {
     let mut result : BigUint = BigUint::ZERO;
     let mut bytes_consumed : usize = 0;
     let mut bits_produced : usize = 0;

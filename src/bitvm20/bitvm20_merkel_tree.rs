@@ -212,7 +212,7 @@ impl bitvm20_merkel_tree {
             result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script4))));
         }
 
-        return (true, result);
+        return (self.primary_validate_transaction(tx), result);
     }
 
     /* TODO

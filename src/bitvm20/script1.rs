@@ -33,8 +33,7 @@ mod test {
     use crate::bitvm20::bitvm20_entry::bitvm20_entry;
     use crate::bitvm20::bitvm20_merkel_tree::{bitvm20_merkel_tree, bitvm20_merkel_tree_size};
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,sign_digits, N};
-    use crate::hash::blake3::*;
+    use crate::signatures::winternitz::{generate_public_key, ZeroPublicKey};
 
     // The secret key
     const winternitz_private_key: &str = "b138982ce17ac813d505b5b40b665d404e9528e7";
@@ -59,13 +58,9 @@ mod test {
             });
         }
 
-        // generate vector of 1 private keys
-        let mut winternitz_private_keys = vec![];
-        for _ in 0..1 {
-            winternitz_private_keys.push(String::from(winternitz_private_key));
-        }
+        let winternitz_private_keys = vec![String::from(winternitz_private_key); 1];
 
-        let exec_contexts = mt.generate_execution_contexts_for_merkel_root_validation(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        let exec_contexts = mt.generate_execution_contexts_for_merkel_root_validation(&winternitz_private_keys, &[ZeroPublicKey; 0], &[script!{}; 0]);
 
         println!("generated execution contexts");
 
