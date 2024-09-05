@@ -2,7 +2,7 @@ use bitcoin::opcodes::all::{OP_BOOLAND, OP_BOOLOR, OP_ENDIF, OP_FROMALTSTACK, OP
 
 use crate::treepp::{script, Script};
 
-use crate::bitvm20::utils::{verify_input_data,pop_bytes,data_to_signable_balke3_digits, reorder_blake3_output_for_le_bytes};
+use crate::bitvm20::utils::{verify_input_data};
 
 use crate::signatures::winternitz::PublicKey;
 

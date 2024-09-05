@@ -1,6 +1,6 @@
 use crate::treepp::{script, Script};
 
-use crate::bitvm20::utils::{verify_input_data,pop_bytes,data_to_signable_balke3_digits};
+use crate::bitvm20::utils::{verify_input_data,pop_bytes};
 
 use crate::signatures::winternitz::PublicKey;
 
