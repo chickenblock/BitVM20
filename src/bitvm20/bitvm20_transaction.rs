@@ -1,24 +1,31 @@
 use num_bigint::BigUint;
 use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
-use ark_ff::{BigInt,PrimeField,UniformRand};
-use ark_ec::PrimeGroup;
+use ark_ff::{BigInt, BigInteger, PrimeField, UniformRand};
+use ark_ec::{AffineRepr, PrimeGroup};
 use std::ops::{Mul,Add,Neg};
-use crate::bitvm20::serde_for_coordinate::{serialize_bn254_element,deserialize_bn254_element};
+use crate::bitvm20::serde_for_coordinate::{serialize_g1affine,serialize_fr,deserialize_g1affine,deserialize_fr,serialize_bn254_element};
+use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
 use crate::bitvm20::bitvm20_entry::{bitvm20_entry};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use chrono::Utc;
+use num_traits::Zero;
+
+use crate::treepp::{Script};
+use crate::bitvm20::script5_partitioned::{construct_script5_1, construct_script5_2, construct_script5_3, construct_script5_4};
+use crate::signatures::winternitz::{PublicKey};
+use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context,simple_script_generator};
 
 #[derive(PartialEq, Debug)]
 pub struct bitvm20_transaction {
-    from_public_key: G1Affine,
-    to_public_key: G1Affine,
-    from_nonce: u64,
-    value: BigUint,
+    pub from_public_key: G1Affine,
+    pub to_public_key: G1Affine,
+    pub from_nonce: u64,
+    pub value: BigUint,
 
     // signature attributes
-    r: G1Affine,
-    s: Fr,
+    pub r: G1Affine,
+    pub s: Fr,
 }
 
 impl bitvm20_transaction {
@@ -49,57 +56,36 @@ impl bitvm20_transaction {
     pub fn serialize(&self) -> [u8; 292] {
         let mut result : [u8; 292] = [0; 292];
         result[0..184].copy_from_slice(&self.serialize_without_signature());
-        result[184..220].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.r.y), true));
-        result[220..256].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.r.x), true));
-        result[256..292].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.s), false));
+        result[184..256].copy_from_slice(&serialize_g1affine(&self.r));
+        result[256..292].copy_from_slice(&serialize_fr(&self.s));
         return result;
     }
 
     pub fn serialize_without_signature(&self) -> [u8; 184] {
         let mut result : [u8; 184] = [0; 184];
-        let mut i : usize = 0;
-        result[0..36].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.from_public_key.y), true));i+=36;
-        result[36..72].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.from_public_key.x), true));i+=36;
-        result[72..108].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.y), true));i+=36;
-        result[108..144].copy_from_slice(&serialize_bn254_element(&BigUint::from(self.to_public_key.x), true));i+=36;
-        while i < 152 {
-            result[i] = ((self.from_nonce >> ((i-144)*8)) & 0xff) as u8; i+=1;
-        }
-        let temp = self.value.to_bytes_le();
-        while i < 184 && (i-152) < temp.len() {
-            result[i] = temp[i-152]; i+=1;
-        }
+        result[0..72].copy_from_slice(&serialize_g1affine(&self.from_public_key));
+        result[72..144].copy_from_slice(&serialize_g1affine(&self.to_public_key));
+        result[144..152].copy_from_slice(&serialize_u64(self.from_nonce));
+        result[152..184].copy_from_slice(&serialize_256bit_biguint(&self.value));
         return result;
     }
 
     pub fn deserialize_without_signature(data : &[u8]) -> bitvm20_transaction {
-        let mut result : bitvm20_transaction = bitvm20_transaction {
-            from_public_key: G1Affine::new_unchecked(
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[36..72], true).to_bytes_le())),
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[0..36], true).to_bytes_le()))
-                            ),
-            to_public_key: G1Affine::new_unchecked(
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[108..144], true).to_bytes_le())),
-                                Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[72..108], true).to_bytes_le()))
-                            ),
-            from_nonce: 0,
-            value: BigUint::from_bytes_le(&data[152..184]),
-            r: G1Affine::new_unchecked(Fq::new(BigInt::zero()), Fq::new(BigInt::zero())),
-            s: Fr::new(BigInt::zero()),
+        let result : bitvm20_transaction = bitvm20_transaction {
+            from_public_key: deserialize_g1affine(&data[0..72]),
+            to_public_key: deserialize_g1affine(&data[72..144]),
+            from_nonce: deserialize_u64(&data[144..152]),
+            value: deserialize_256bit_biguint(&data[152..184]),
+            r: G1Affine::zero(),
+            s: Fr::zero(),
         };
-        for i in (144..152) {
-            result.from_nonce |= ((data[i] as u64) << ((i-144)*8));
-        }
         return result;
     }
 
     pub fn deserialize(data : &[u8]) -> bitvm20_transaction {
         let mut result = bitvm20_transaction::deserialize_without_signature(data);
-        result.r = G1Affine::new_unchecked(
-            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[220..256], true).to_bytes_le())),
-            Fq::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[184..220], true).to_bytes_le()))
-        );
-        result.s = Fr::from_le_bytes_mod_order(&(deserialize_bn254_element(&data[256..292], false).to_bytes_le()));
+        result.r = deserialize_g1affine(&data[184..256]);
+        result.s = deserialize_fr(&data[256..292]);
         return result;
     }
 
@@ -141,6 +127,134 @@ impl bitvm20_transaction {
 
         // R - Rv == e * P
         return G1Projective::from(self.r).add(Rv.neg()) == self.from_public_key.mul(e);
+    }
+
+    pub fn generate_execution_contexts_for_signature_verification(&self, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> (bool, Vec<bitvm20_execution_context>) {
+        let mut result = vec![];
+
+        // construct e = h(Rx || M) -> using script 5_1
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(&serialize_bn254_element(&BigUint::from(self.r.x), true));
+        hasher.update(&self.serialize_without_signature());
+        let data_hash = hasher.finalize();
+        let data_hash = data_hash.as_bytes();
+        let e : Fr = Fr::from_le_bytes_mod_order(data_hash);
+
+        // push a script for calculation of e
+        {
+            let mut input = vec![];
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(self.r.x), true));
+            input.extend_from_slice(&self.serialize_without_signature());
+            input.extend_from_slice(&serialize_bn254_element(&BigUint::from(e), false));
+            if(winternitz_private_keys.len() > 0) {
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_1))));
+            } else {
+                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_1))));
+            }
+        }
+
+        // construct eP = e * P
+        let mut eP = G1Projective::zero();
+        {
+            let mut power_i = G1Projective::from(self.from_public_key);
+            for i in 0..254 {
+                let mut eP_next = eP.clone();
+                if(e.into_bigint().get_bit(i) == true) {
+                    eP_next = eP.add(power_i);
+                }
+                let power_i_next = power_i.add(power_i);
+
+                // script for eP_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(eP_next)));
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(power_i)));
+                    input.push(i as u8);
+                    input.extend_from_slice(&serialize_fr(&e));
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(eP)));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_2))));
+                    }
+                }
+
+                // script for power_i_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(power_i_next)));
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(power_i)));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_3))));
+                    }
+                }
+
+                eP = eP_next;
+                power_i = power_i_next;
+            }
+        }
+        assert!((eP == self.from_public_key.mul(e)), "wrong eP");
+
+        // construct Rv = s * G
+        let mut Rv = G1Projective::zero();
+        {
+            let mut power_i = G1Projective::generator();
+            for i in 0..254 {
+                let mut Rv_next = Rv.clone();
+                if(self.s.into_bigint().get_bit(i) == true) {
+                    Rv_next = Rv.add(power_i);
+                }
+                let power_i_next = power_i.add(power_i);
+
+                // script for Rv_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(Rv_next)));
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(power_i)));
+                    input.push(i as u8);
+                    input.extend_from_slice(&serialize_fr(&self.s));
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(Rv)));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_2))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_2))));
+                    }
+                }
+
+                // script for power_i_next
+                {
+                    let mut input = vec![];
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(power_i_next)));
+                    input.extend_from_slice(&serialize_g1affine(&G1Affine::from(power_i)));
+                    if(winternitz_private_keys.len() > 0) {
+                        result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_3))));
+                    } else {
+                        result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_3))));
+                    }
+                }
+
+                Rv = Rv_next;
+                power_i = power_i_next;
+            }
+        }
+        assert!((Rv == G1Projective::generator().mul(self.s)), "wrong Rv");
+
+        // build script for R - Rv == eP
+        {
+            let mut input = vec![];
+            input.extend_from_slice(&serialize_g1affine(&self.r));
+            input.extend_from_slice(&serialize_g1affine(&G1Affine::from(Rv)));
+            input.extend_from_slice(&serialize_g1affine(&G1Affine::from(eP)));
+            if(winternitz_private_keys.len() > 0) {
+                result.push(bitvm20_execution_context::new(&winternitz_private_keys[result.len()], &input, Box::new(simple_script_generator::new(construct_script5_4))));
+            } else {
+                result.push(bitvm20_execution_context::new2(&winternitz_public_keys[result.len()], &input, &winternitz_signatures[result.len()], Box::new(simple_script_generator::new(construct_script5_4))));
+            }
+        }
+
+        return ((G1Projective::from(self.r).add(Rv.neg()) == eP) , result);
     }
 }
 
@@ -188,7 +302,7 @@ mod test {
 
         let from_private_key : Fr = Fr::rand(&mut prng);
 
-        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
+        let from : bitvm20_entry = bitvm20_entry::new(&from_private_key, 1215421545, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid from balance"));
         let to : bitvm20_entry = bitvm20_entry::new(&Fr::rand(&mut prng), 0, &BigUint::parse_bytes(b"1000000000", 10).expect("invalid to balance"));
 
         let mut tx1 = bitvm20_transaction::new_unsigned(&from, &to, &BigUint::parse_bytes(b"5000", 10).expect("transfer value invalid"));
