@@ -6,6 +6,7 @@ use crate::signatures::winternitz::PublicKey;
 
 // inputs are previous merkel state root in bytes
 pub fn construct_script1(winternitz_public_key: &PublicKey, original_merkel_state_root : &Vec<u8>) -> Script {
+    assert!(original_merkel_state_root.len() == 32, "merkel state root is not 32 bytes");
     return script!{
         { verify_input_data(&winternitz_public_key, 32) }
 
