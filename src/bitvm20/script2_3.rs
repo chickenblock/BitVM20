@@ -86,14 +86,14 @@ mod test {
         assert!(!p.is_none(), "Generated none proof");
         let proof = p.unwrap();
 
-        // generate a vector of 1 private keys
-        let mut winternitz_private_keys = vec![];
-        for _ in 0..1 {
-            winternitz_private_keys.push(String::from(winternitz_private_key));
-        }
+        assert!(proof.validate_proof(), "rust offchain merkel proof validation did not pass");
+        println!("proof.validate_proof says proof is valid");
+
+        let winternitz_private_keys = vec![String::from(winternitz_private_key); 1];
 
         let (validation_result, exec_contexts) = proof.generate_execution_contexts_for_merkel_proof_validation(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
         assert!(validation_result, "rust offchain merkel proof validation did not pass");
+        println!("proof.generate_execution_contexts_for_merkel_proof_validation says proof is valid");
 
         println!("generated execution contexts");
 
