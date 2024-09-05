@@ -94,16 +94,22 @@ impl bitvm20_execution_context {
         }
     }
 
+    pub fn get_input(&self) ->Script {
+        return script!{
+            for x in (&(self.input_parameters)).iter().rev() {
+                {(*x)}
+            }
+            { self.get_winternitz_signatures() }
+        };
+    }
+
     pub fn get_script(&self) -> Script {
         return self.script_generator.generate_script(&self.get_winternitz_public_key());
     }
 
     pub fn get_executable(&self) -> Script {
         return script!{
-            for x in (&(self.input_parameters)).iter().rev() {
-                {(*x)}
-            }
-            { self.get_winternitz_signatures() }
+            { self.get_input() }
             { self.get_script() }
         };
     }
