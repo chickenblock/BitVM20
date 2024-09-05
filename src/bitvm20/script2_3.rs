@@ -52,7 +52,7 @@ pub fn construct_script2_3(winternitz_public_key: &PublicKey) -> Script {
 mod test {
     use super::*;
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,N};
+    use crate::signatures::winternitz::{generate_public_key, ZeroPublicKey};
     use num_bigint::{BigUint};
     use crate::bitvm20::bitvm20_entry::bitvm20_entry;
     use crate::bitvm20::bitvm20_merkel_tree::{bitvm20_merkel_tree,bitvm20_merkel_proof};
@@ -91,7 +91,7 @@ mod test {
 
         let winternitz_private_keys = vec![String::from(winternitz_private_key); 1];
 
-        let (validation_result, exec_contexts) = proof.generate_execution_contexts_for_merkel_proof_validation(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        let (validation_result, exec_contexts) = proof.generate_execution_contexts_for_merkel_proof_validation(&winternitz_private_keys, &[ZeroPublicKey; 0], &[script!{}; 0]);
         assert!(validation_result, "rust offchain merkel proof validation did not pass");
         println!("proof.generate_execution_contexts_for_merkel_proof_validation says proof is valid");
 

@@ -107,10 +107,9 @@ mod test {
     use super::*;
     use crate::bitvm20::{bitvm20_entry::bitvm20_entry, bitvm20_merkel_tree::bitvm20_merkel_tree};
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,sign_digits};
+    use crate::signatures::winternitz::{generate_public_key, ZeroPublicKey};
     use ark_bn254::{Fq, G1Affine};
     use num_traits::Zero;
-    use crate::signatures::winternitz::N;
     use std::ops::Add;
     use ark_ff::BigInt;
     use num_bigint::BigUint;
@@ -145,7 +144,7 @@ mod test {
 
         let winternitz_private_keys = vec![String::from(winternitz_private_key); 1];
 
-        let (validation_result, exec_contexts) = mt.generate_execution_contexts_for_primary_validation_of_transaction(&tx, &winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        let (validation_result, exec_contexts) = mt.generate_execution_contexts_for_primary_validation_of_transaction(&tx, &winternitz_private_keys, &[ZeroPublicKey; 0], &[script!{}; 0]);
         assert!(validation_result, "rust offchain basic transaction validation did not pass");
         println!("mt.generate_execution_contexts_for_primary_validation_of_transaction says transaction is valid");
 

@@ -207,7 +207,7 @@ pub fn construct_script5_4(winternitz_public_key: &PublicKey) -> Script {
 mod test {
     use super::*;
     use crate::run;
-    use crate::signatures::winternitz::{generate_public_key,sign_digits, N};
+    use crate::signatures::winternitz::{generate_public_key, ZeroPublicKey};
     use crate::bitvm20::bitvm20_entry::bitvm20_entry;
     use crate::bitvm20::bitvm20_transaction::bitvm20_transaction;
     use num_bigint::{BigUint,RandomBits};
@@ -248,7 +248,7 @@ mod test {
 
         let winternitz_private_keys = vec![String::from(winternitz_private_key); 1018];
 
-        let (verification_result, exec_contexts) = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys, &[[[0 as u8; 20]; N as usize]; 0], &[script!{}; 0]);
+        let (verification_result, exec_contexts) = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys, &[ZeroPublicKey; 0], &[script!{}; 0]);
 
         assert!(verification_result, "rust offchain signature verification did not pass");
         println!("tx.generate_execution_contexts_for_signature_verification says transaction has valid signature");
