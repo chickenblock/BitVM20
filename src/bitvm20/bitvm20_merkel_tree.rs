@@ -10,7 +10,6 @@ use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::Zero;
 use num_bigint::BigUint;
 use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
-use std::ops::{Add, Sub};
 use super::bitvm20_execution_context::script1_generator;
 use super::bitvm20_user_transaction::bitvm20_user_transaction;
 use super::script1::construct_script1;
