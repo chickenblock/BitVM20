@@ -10,7 +10,7 @@ use ark_bn254::{G1Affine, G1Projective, Fq, Fr};
 use ark_ff::Zero;
 use num_bigint::BigUint;
 use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
-
+use std::ops::{Add, Sub};
 use super::bitvm20_execution_context::script1_generator;
 use super::bitvm20_user_transaction::bitvm20_user_transaction;
 use super::script1::construct_script1;
@@ -71,6 +71,16 @@ impl bitvm20_merkel_tree {
             }
             Some(index) => {
                 return self.get_entry_by_index(*index);
+            }
+        }
+    }
+
+    fn update_bitvm20_entry(&mut self, new_entry: &bitvm20_entry) -> bool {
+        return match self.entries_index.get(&new_entry.public_key) {
+            None => false,
+            Some(index) => {
+                self.entries[*index] = new_entry.clone();
+                return true;
             }
         }
     }
@@ -230,15 +240,61 @@ impl bitvm20_merkel_tree {
         return (self.primary_validate_transaction(tx), result);
     }
 
-    /* TODO
-    pub fn apply_transaction(&self, tx : &bitvm20_transaction) -> bool {
+    // the transaction must be validated fully before calling this transaction
+    pub fn apply_transaction(&mut self, tx : &bitvm20_transaction) -> bool {
+        // primary validation passes, hence the transaction can be applied
+        if !self.primary_validate_transaction(&tx) {
+            return false;
+        }
 
-    }*/
+        let mut from_entry = match self.get_entry_by_public_key(&tx.from_public_key) {
+            None => { return false; },
+            Some(from_entry) => from_entry.clone()
+        };
 
-    /* TODO
-    pub fn undo_transaction(&self, tx : &bitvm20_transaction) -> bool {
+        let mut to_entry = match self.get_entry_by_public_key(&tx.to_public_key) {
+            None => { return false; },
+            Some(to_entry) => to_entry.clone()
+        };
 
-    }*/
+        // update local copies
+        from_entry.balance = from_entry.balance.sub(&tx.value);
+        to_entry.balance = to_entry.balance.add(&tx.value);
+        from_entry.nonce += 1;
+
+        // update from and to entries
+        self.update_bitvm20_entry(&from_entry);
+        self.update_bitvm20_entry(&to_entry);
+        return true;
+    }
+
+    // use this function only on the latest applied transaction on the merkle tree
+    pub fn undo_transaction(&mut self, tx : &bitvm20_transaction) -> bool {
+        let mut from_entry = match self.get_entry_by_public_key(&tx.from_public_key) {
+            None => { return false; },
+            Some(from_entry) => from_entry.clone()
+        };
+
+        let mut to_entry = match self.get_entry_by_public_key(&tx.to_public_key) {
+            None => { return false; },
+            Some(to_entry) => to_entry.clone()
+        };
+
+        // minor check, rememeber we do not validate anything there, hence use this function only on the most recently applied transaction
+        if(from_entry.nonce == 0) {
+            return false;
+        }
+
+        // update local copies
+        from_entry.balance = from_entry.balance.add(&tx.value);
+        to_entry.balance = to_entry.balance.sub(&tx.value);
+        from_entry.nonce -= 1;
+
+        // update from and to entries
+        self.update_bitvm20_entry(&from_entry);
+        self.update_bitvm20_entry(&to_entry);
+        return true;
+    }
 
     pub fn generate_execution_contexts_for_merkel_root_validation(&self, winternitz_private_keys : &[String], winternitz_public_keys : &[PublicKey], winternitz_signatures : &[Script]) -> Vec<bitvm20_execution_context> {
         let mut result = vec![];
