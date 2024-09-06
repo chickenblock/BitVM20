@@ -9,17 +9,21 @@ pub struct bitvm20_broadcast_packet {
 }
 
 impl bitvm20_broadcast_packet {
-    // TODO
     pub fn new(tx : &bitvm20_transaction, exec_contexts : Vec<bitvm20_execution_context>) {
         let mut broadcast_packet = bitvm20_broadcast_packet {
             tx : tx.clone(),
             winternitz_public_keys : vec![],
             winternitz_signatures : vec![],
         };
+        for ec in exec_contexts {
+            broadcast_packet.winternitz_public_keys.push(ec.get_winternitz_public_key());
+            broadcast_packet.winternitz_signatures.push(ec.get_winternitz_signatures());
+        }
+        return broadcast_packet;
     }
 
     // TODO
-    // to be used by the operator
+    // to be used by the operator after validation
     pub fn build_execution_contexts(&self, mt : &bitvm20_merkel_tree) -> Option<Vec<bitvm20_execution_context>> {
         return None;
     }
