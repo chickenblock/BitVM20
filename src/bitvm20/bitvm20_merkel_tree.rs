@@ -12,6 +12,7 @@ use num_bigint::BigUint;
 use crate::bitvm20::serde_for_uint::{serialize_256bit_biguint,serialize_u64,deserialize_256bit_biguint,deserialize_u64};
 
 use super::bitvm20_execution_context::script1_generator;
+use super::bitvm20_user_transaction::bitvm20_user_transaction;
 use super::script1::construct_script1;
 use super::script2_3::construct_script2_3;
 use super::script4::construct_script4;
@@ -148,6 +149,20 @@ impl bitvm20_merkel_tree {
                     None => { return None; }
                     Some(to) => {
                         return Some(bitvm20_transaction::new_unsigned(from, to, value));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn generate_transaction_from_user_transaction(&self, utx : &bitvm20_user_transaction) -> Option<bitvm20_transaction> {
+        match self.get_entry_by_index(utx.from_user_id) {
+            None => { return None; },
+            Some(from) => {
+                match self.get_entry_by_index(utx.to_user_id) {
+                    None => { return None; }
+                    Some(to) => {
+                        return Some(bitvm20_transaction::new(from, to, &utx.value, &utx.r, &utx.s));
                     }
                 }
             }
