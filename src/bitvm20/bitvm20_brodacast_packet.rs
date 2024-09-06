@@ -8,6 +8,10 @@ pub struct bitvm20_broadcast_packet {
     pub tx : bitvm20_transaction,
     pub winternitz_public_keys : Vec<PublicKey>,
     pub winternitz_signatures : Vec<Script>,
+    
+    // this may additionally also contain merkel proofs of from-user and to-user
+    // which will allow challengers and other third person parties to compute the new state root
+    // this has been omitted as of now to simplify the implementation
 }
 
 impl bitvm20_broadcast_packet {
