@@ -5,6 +5,7 @@ use super::bitvm20_brodacast_packet::bitvm20_broadcast_packet;
 use super::bitvm20_merkel_tree::{bitvm20_merkel_proof, bitvm20_merkel_tree};
 use super::bitvm20_transaction::{bitvm20_transaction};
 use super::bitvm20_entry::{bitvm20_entry};
+use num_traits::Zero;
 
 pub struct bitvm20_operator {
     pub bitcoin_private_key : BigUint,
@@ -31,6 +32,11 @@ impl bitvm20_operator {
 
     // TODO
     pub fn post_transaction_and_receive_broadcast(tx : &bitvm20_transaction) -> Option<bitvm20_broadcast_packet> {
+        // validate transaction signature
+        // primary validate transaction
+        // generate merkel proofs
+
+
         return None;
     }
 }
