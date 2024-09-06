@@ -27,10 +27,4 @@ impl bitvm20_broadcast_packet {
         }
         return broadcast_packet;
     }
-
-    // TODO
-    // to be used by the operator after validation
-    pub fn build_execution_contexts(&self, mt : &bitvm20_merkel_tree) -> Option<Vec<bitvm20_execution_context>> {
-        return None;
-    }
 }
