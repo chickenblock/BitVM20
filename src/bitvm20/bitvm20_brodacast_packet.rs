@@ -1,6 +1,8 @@
 use crate::treepp::{script, Script};
 use crate::signatures::winternitz::PublicKey;
-use super::{bitvm20_execution_context::bitvm20_execution_context, bitvm20_transaction::bitvm20_transaction};
+use super::bitvm20_merkel_tree::bitvm20_merkel_tree;
+use super::bitvm20_execution_context::bitvm20_execution_context;
+use super::bitvm20_transaction::bitvm20_transaction;
 
 pub struct bitvm20_broadcast_packet {
     pub tx : bitvm20_transaction,
@@ -9,7 +11,7 @@ pub struct bitvm20_broadcast_packet {
 }
 
 impl bitvm20_broadcast_packet {
-    pub fn new(tx : &bitvm20_transaction, exec_contexts : Vec<bitvm20_execution_context>) {
+    pub fn new(tx : &bitvm20_transaction, exec_contexts : Vec<bitvm20_execution_context>) -> bitvm20_broadcast_packet{
         let mut broadcast_packet = bitvm20_broadcast_packet {
             tx : tx.clone(),
             winternitz_public_keys : vec![],
