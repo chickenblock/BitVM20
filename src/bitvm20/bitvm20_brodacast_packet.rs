@@ -15,7 +15,7 @@ pub struct bitvm20_broadcast_packet {
 }
 
 impl bitvm20_broadcast_packet {
-    pub fn new(tx : &bitvm20_transaction, exec_contexts : Vec<bitvm20_execution_context>) -> bitvm20_broadcast_packet{
+    pub fn new(tx : &bitvm20_transaction, exec_contexts : &Vec<bitvm20_execution_context>) -> bitvm20_broadcast_packet{
         let mut broadcast_packet = bitvm20_broadcast_packet {
             tx : tx.clone(),
             winternitz_public_keys : vec![],

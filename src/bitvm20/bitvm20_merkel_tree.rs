@@ -63,11 +63,8 @@ impl bitvm20_merkel_tree {
     }
 
     pub fn get_entry_by_public_key(&self, public_key: &G1Affine) -> Option<&bitvm20_entry> {
-        let index_opt = self.entries_index.get(public_key);
-        match index_opt {
-            None => {
-                return None;
-            }
+        match self.entries_index.get(public_key) {
+            None => {return None;}
             Some(index) => {
                 return self.get_entry_by_index(*index);
             }
@@ -79,7 +76,7 @@ impl bitvm20_merkel_tree {
             None => false,
             Some(index) => {
                 self.entries[*index] = new_entry.clone();
-                return true;
+                true
             }
         }
     }
