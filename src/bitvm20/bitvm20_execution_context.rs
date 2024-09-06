@@ -1,6 +1,8 @@
+use crate::execute_script_without_stack_limit;
 use crate::treepp::{script, Script};
 use crate::signatures::winternitz::{generate_public_key, sign_digits, PublicKey, ZeroPublicKey};
 use crate::bitvm20::utils::data_to_signable_balke3_digits;
+use super::utils::{pop_bytes, verify_input_data};
 
 pub trait script_generator {
     fn generate_script(&self, winternitz_public_key: &PublicKey) -> Script;
@@ -114,9 +116,16 @@ impl bitvm20_execution_context {
         };
     }
 
-    // TO DO
-    pub fn validate_winternitz_signatures(&self) -> bool {
-        return false;
+    // to be used by verifier to ensure that correct winternitz signatures are provided
+    // TODO : currently implemented as if it is a bitcoin script, but to be replaced with rust implementation
+    pub fn validate_input_parameters_and_winternitz_signatures(&self) -> bool {
+        let validation_script = script!{
+            { self.get_input() } // put input_parameters and then winternitz_signatures right after that
+            { verify_input_data(&self.get_winternitz_public_key(), self.input_parameters.len()) } // verify the winternitz_signatures against the winternitz_public_key and only input_parameters will be left on stack after this
+            { pop_bytes(self.input_parameters.len()) }
+            OP_TRUE
+        };
+        return execute_script_without_stack_limit(validation_script).success;
     }
 
     // TODO : convert into an overloaded == operator
