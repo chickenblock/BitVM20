@@ -25,6 +25,8 @@ impl bitvm20_operator {
 
             state_tree: bitvm20_merkel_tree::new(),
             tx_history: vec![],
+
+            tx_on_hold: None,
         };
     }
 
