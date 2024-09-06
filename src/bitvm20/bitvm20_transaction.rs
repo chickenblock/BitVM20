@@ -16,7 +16,7 @@ use crate::bitvm20::script5_partitioned::{construct_script5_1, construct_script5
 use crate::signatures::winternitz::{PublicKey};
 use crate::bitvm20::bitvm20_execution_context::{bitvm20_execution_context,simple_script_generator};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct bitvm20_transaction {
     pub from_public_key: G1Affine,
     pub to_public_key: G1Affine,
