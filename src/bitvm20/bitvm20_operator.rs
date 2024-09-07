@@ -114,7 +114,7 @@ impl bitvm20_operator {
 
     // TODO
     // called after the operator received all the necessary signatures
-    pub fn receive_verifier_signatures(signatures : Vec<String>) {
+    pub fn receive_verifier_signatures(verifier_signatures : Vec<String>) {
         // note down verifier signatures for the transaction on hold
 
         // apply the transaction on hold

@@ -15,3 +15,4 @@ pub mod bitvm20_operator;
 pub mod bitvm20_verifier;
 pub mod bitvm20_brodacast_packet;
 pub mod bitvm20_user_transaction;
+pub mod bitvm20_challengable_transaction;
