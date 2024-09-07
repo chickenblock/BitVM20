@@ -45,7 +45,6 @@ impl bitvm20_operator {
         return None;
     }
 
-    // TODO
     // called by the user to generate the transaction object and the broadcast
     pub fn post_transaction_and_receive_broadcast(&mut self, utx : &bitvm20_user_transaction) -> Option<bitvm20_broadcast_packet> {
         
