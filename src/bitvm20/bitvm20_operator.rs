@@ -5,6 +5,7 @@ use rand::{Rng, RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use crate::signatures::winternitz::{PublicKey, ZeroPublicKey};
 use super::bitvm20_brodacast_packet::bitvm20_broadcast_packet;
+use super::bitvm20_challengable_transaction::bitvm20_challengable_transaction;
 use super::bitvm20_execution_context::bitvm20_execution_context;
 use super::bitvm20_merkel_tree::{bitvm20_merkel_proof, bitvm20_merkel_tree};
 use super::bitvm20_transaction::{bitvm20_transaction};
@@ -16,7 +17,7 @@ pub struct bitvm20_operator {
     pub bitcoin_private_key : BigUint,
 
     pub state_tree : bitvm20_merkel_tree,      // current state of the tree
-    pub tx_history : Vec<bitvm20_transaction>, // all transactions applied so far
+    pub tx_history : Vec<bitvm20_challengable_transaction>, // all transactions applied so far
 
     pub tx_on_hold : Option<bitvm20_transaction>, // a transaction for which verification signatures have not been received
 }
@@ -112,13 +113,25 @@ impl bitvm20_operator {
         return Some(bitvm20_broadcast_packet::new(&tx, &exec_contexts));
     }
 
-    // TODO
     // called after the operator received all the necessary signatures
-    pub fn receive_verifier_signatures(verifier_signatures : Vec<String>) {
+    pub fn receive_verifier_signatures(&mut self, verifier_signatures : &Vec<String>) -> bool {
+        let tx_on_hold = match &self.tx_on_hold { // if there is no transaction on hold then fail
+            None => { return false; },
+            Some(tx) => {
+                tx
+            }
+        };
+
         // note down verifier signatures for the transaction on hold
+        // and then move the transaction on hold to applied transactions
+        self.tx_history.push(bitvm20_challengable_transaction::new(tx_on_hold, verifier_signatures));
 
         // apply the transaction on hold
+        self.state_tree.apply_transaction(tx_on_hold);
 
-        // move the transaction on hold to applied transactions
+        // clear its onhold status
+        self.tx_on_hold = None;
+
+        return true;
     }
 }
