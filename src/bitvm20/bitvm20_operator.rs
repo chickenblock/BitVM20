@@ -1,3 +1,7 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use crate::bridge::contexts::verifier;
 use crate::treepp::{script, Script};
 use chrono::Utc;
 use num_bigint::BigUint;
@@ -11,6 +15,7 @@ use super::bitvm20_merkel_tree::{bitvm20_merkel_proof, bitvm20_merkel_tree};
 use super::bitvm20_transaction::{bitvm20_transaction};
 use super::bitvm20_entry::{bitvm20_entry};
 use super::bitvm20_user_transaction::bitvm20_user_transaction;
+use super::bitvm20_verifier::bitvm20_verifier;
 use num_traits::Zero;
 
 pub struct bitvm20_operator {
@@ -19,19 +24,19 @@ pub struct bitvm20_operator {
     pub state_tree : bitvm20_merkel_tree,      // current state of the tree
     pub tx_history : Vec<bitvm20_challengable_transaction>, // all transactions applied so far
 
-    pub tx_on_hold : Option<bitvm20_transaction>, // a transaction for which verification signatures have not been received
+    pub verifiers : Vec<Rc<RefCell<bitvm20_verifier>>>,
 }
 
 impl bitvm20_operator {
     // take database file as input
-    pub fn new() -> bitvm20_operator {
+    pub fn new(verifiers : &Vec<Rc<RefCell<bitvm20_verifier>>>) -> bitvm20_operator {
         return bitvm20_operator {
             bitcoin_private_key: BigUint::zero(),
 
             state_tree: bitvm20_merkel_tree::new(),
             tx_history: vec![],
 
-            tx_on_hold: None,
+            verifiers : verifiers.clone(),
         };
     }
 
@@ -43,10 +48,6 @@ impl bitvm20_operator {
     // TODO
     // called by the user to generate the transaction object and the broadcast
     pub fn post_transaction_and_receive_broadcast(&mut self, utx : &bitvm20_user_transaction) -> Option<bitvm20_broadcast_packet> {
-        // fail if there is a transaction already on hold
-        if !self.tx_on_hold.is_none() {
-            return None;
-        }
         
         // generate bitvm20_transaction from user_transaction
         let tx = match self.state_tree.generate_transaction_from_user_transaction(utx) {
@@ -101,37 +102,34 @@ impl bitvm20_operator {
             exec_contexts.extend(r);
 
             // script 5
-            let (v, r) = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys[3..4], &[ZeroPublicKey; 0], &[script!{}; 0]);
+            let (v, r) = tx.generate_execution_contexts_for_signature_verification(&winternitz_private_keys[4..1022], &[ZeroPublicKey; 0], &[script!{}; 0]);
             assert!(v, "making execution contexts for invalid transaction");
             exec_contexts.extend(r);
         }
 
-        // put the transaction on hold
-        self.tx_on_hold = Some(tx.clone());
+        // generate broadcast_packet out of bitvm20_transaction and the execution contexts
+        let broadcast_packet = bitvm20_broadcast_packet::new(&tx, &exec_contexts);
 
-        // generate broadcast_packet out of bitvm20_transaction and the execution contexts and return it
-        return Some(bitvm20_broadcast_packet::new(&tx, &exec_contexts));
-    }
+        // generate locking transaction and send it to bitcoin
+        // TODO
 
-    // called after the operator received all the necessary signatures
-    pub fn receive_verifier_signatures(&mut self, verifier_signatures : &Vec<String>) -> bool {
-        let tx_on_hold = match &self.tx_on_hold { // if there is no transaction on hold then fail
-            None => { return false; },
-            Some(tx) => {
-                tx
+        // now broadcast this packet to all verifiers
+        let mut verifier_signatures = vec![];
+        for v in self.verifiers.iter() {
+            match v.borrow_mut().receive_broadcast(&broadcast_packet) {
+                None => {return None;},
+                Some(verifier_signature) => {verifier_signatures.push(verifier_signature)},
             }
-        };
+        }
 
         // note down verifier signatures for the transaction on hold
         // and then move the transaction on hold to applied transactions
-        self.tx_history.push(bitvm20_challengable_transaction::new(tx_on_hold, verifier_signatures));
+        self.tx_history.push(bitvm20_challengable_transaction::new(&tx, &verifier_signatures));
 
         // apply the transaction on hold
-        self.state_tree.apply_transaction(tx_on_hold);
+        self.state_tree.apply_transaction(&tx);
 
-        // clear its onhold status
-        self.tx_on_hold = None;
-
-        return true;
+        // return the broadcast packed so that everyone in the world can challenge
+        return Some(broadcast_packet);
     }
 }
