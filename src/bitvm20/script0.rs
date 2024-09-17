@@ -3,7 +3,7 @@ use bitcoin::PublicKey;
 use crate::treepp::{script, Script};
 
 // inputs must contain sigantures in reverse order of the public_keys
-pub fn construct_script0(blocks_until : i32, public_keys: &Vec<PublicKey>) -> Script {
+pub fn construct_script0(blocks_until : u32, public_keys: &Vec<PublicKey>) -> Script {
     script!{
         {blocks_until} OP_CSV OP_DROP
         OP_0
